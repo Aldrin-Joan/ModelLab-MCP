@@ -4,8 +4,10 @@ import io
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
+
 import joblib
 import numpy as np
+
 from ml_mcp.domain.value_objects import TaskType
 
 

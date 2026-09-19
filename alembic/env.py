@@ -1,12 +1,14 @@
 import asyncio
 from logging.config import fileConfig
-from alembic import context
+
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+import ml_mcp.infrastructure.postgres.models  # noqa: F401
+from alembic import context
 from ml_mcp.config import get_settings
 from ml_mcp.infrastructure.postgres.base import Base
-import ml_mcp.infrastructure.postgres.models  # noqa: F401
 
 config = context.config
 

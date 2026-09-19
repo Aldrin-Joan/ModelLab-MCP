@@ -1,7 +1,9 @@
 """Tool classification and security requirements."""
 
 from enum import StrEnum
+
 from pydantic import BaseModel
+
 from ml_mcp.domain.policies.rbac import Scope
 
 

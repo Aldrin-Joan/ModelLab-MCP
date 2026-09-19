@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import Callable, Coroutine
 from typing import Any, TypeVar
+
 from ml_mcp.domain.errors import ResourceLimitExceededError
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,6 @@ class WorkerSandbox:
         """Execute async function wrapped with wall-clock timeout."""
         try:
             return await asyncio.wait_for(coro_fn(*args, **kwargs), timeout=self.timeout_seconds)
-        except (asyncio.TimeoutError, TimeoutError) as exc:
+        except TimeoutError as exc:
             logger.error("Worker execution timed out after %d seconds", self.timeout_seconds)
             raise ResourceLimitExceededError("execution_time", f"{self.timeout_seconds}s", "timeout") from exc

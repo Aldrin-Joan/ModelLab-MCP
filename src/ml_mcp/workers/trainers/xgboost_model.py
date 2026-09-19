@@ -2,9 +2,11 @@
 
 import io
 from typing import Any
+
 import joblib
 import numpy as np
 import xgboost as xgb
+
 from ml_mcp.domain.value_objects import TaskType
 from ml_mcp.workers.metrics import MetricsCalculator
 from ml_mcp.workers.trainers.base import BaseModelTrainer, TrainingResult

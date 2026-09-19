@@ -3,9 +3,11 @@
 import hashlib
 import logging
 from typing import Any
+
 import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError
+
 from ml_mcp.config import Settings, get_settings
 from ml_mcp.domain.errors import DependencyUnavailableError
 
@@ -147,7 +149,7 @@ class S3StorageService:
                 ExpiresIn=ttl,
             )
             return url
-        except Exception as exc:
+        except Exception:
             return f"https://s3.local/{self.bucket_name}/{key}?expires={ttl}&sig=mock"
 
     def generate_presigned_put_url(
@@ -165,7 +167,7 @@ class S3StorageService:
                 ExpiresIn=ttl,
             )
             return url
-        except Exception as exc:
+        except Exception:
             return f"https://s3.local/{self.bucket_name}/{key}?expires={ttl}&sig=mock"
 
 

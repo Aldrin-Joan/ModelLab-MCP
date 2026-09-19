@@ -6,13 +6,15 @@ resource templates, and prompt rendering.
 
 import base64
 import json
+
 import pytest
+
 from ml_mcp.application.models.service import ModelService
+from ml_mcp.domain.policies import Principal, Role
 from ml_mcp.infrastructure.postgres.base import Base
-from ml_mcp.infrastructure.postgres.session import DatabaseManager, get_db_manager
+from ml_mcp.infrastructure.postgres.session import get_db_manager
 from ml_mcp.server.app import create_server
 from ml_mcp.server.context import set_current_principal
-from ml_mcp.domain.policies import Principal, Role
 
 
 @pytest.fixture(autouse=True)

@@ -1,9 +1,9 @@
 """Structured analysis package."""
 
 from ml_mcp.application.analysis.diagnostics import (
-    OverfittingDetector,
     DataLeakageDetector,
     ErrorPatternAnalyzer,
+    OverfittingDetector,
 )
 from ml_mcp.application.analysis.service import AnalysisService
 

@@ -11,17 +11,17 @@ Verifies:
 
 import base64
 import json
+
 import pytest
 from starlette.testclient import TestClient
+
 from ml_mcp.application.models.service import ModelService
 from ml_mcp.domain.errors import (
-    AuthorizationDeniedError,
     ResourceLimitExceededError,
-    ResourceNotFoundError,
 )
 from ml_mcp.domain.policies import Principal, Role, Scope
-from ml_mcp.infrastructure.postgres.base import Base, generate_uuid7
-from ml_mcp.infrastructure.postgres.session import DatabaseManager, get_db_manager
+from ml_mcp.infrastructure.postgres.base import Base
+from ml_mcp.infrastructure.postgres.session import get_db_manager
 from ml_mcp.server.app import create_server
 from ml_mcp.server.auth import get_token_validator
 from ml_mcp.server.context import set_current_principal
@@ -274,10 +274,11 @@ def test_jwt_expired_token_rejected_at_transport():
 
 def test_jwt_forged_signature_rejected_at_transport():
     """Verify token signed with an unauthorized key is rejected with HTTP 401."""
-    import jwt
     import datetime
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    import jwt
+
+    now = datetime.datetime.now(datetime.UTC)
     forged_token = jwt.encode(
         {
             "iss": "https://auth.modellab.local",
@@ -308,7 +309,6 @@ def test_jwt_forged_signature_rejected_at_transport():
 @pytest.mark.asyncio
 async def test_rate_limiting_enforcement():
     """Verify sliding-window rate limit triggers ResourceLimitExceededError when saturated."""
-    from ml_mcp.domain.policies import TOOL_POLICIES
     from ml_mcp.infrastructure.redis.rate_limiter import SlidingWindowRateLimiter
     from ml_mcp.server.middleware import SecurityPipeline
 

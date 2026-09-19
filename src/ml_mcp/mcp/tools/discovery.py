@@ -1,6 +1,7 @@
 """Discovery MCP tools for models and datasets."""
 
 from typing import Any
+
 from ml_mcp.application.datasets.service import DatasetService
 from ml_mcp.application.models.service import ModelService
 from ml_mcp.domain.policies import Principal, Scope

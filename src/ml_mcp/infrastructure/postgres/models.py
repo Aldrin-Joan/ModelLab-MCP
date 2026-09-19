@@ -2,20 +2,21 @@
 
 from datetime import datetime
 from typing import Any
+
 from sqlalchemy import (
+    JSON,
     BigInteger,
-    Boolean,
     Float,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from ml_mcp.infrastructure.postgres.base import Base, generate_uuid7, utc_now
 
 # Universal JSON type: native JSONB for PostgreSQL, automatic JSON serializer for SQLite

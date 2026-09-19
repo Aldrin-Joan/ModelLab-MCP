@@ -1,6 +1,7 @@
 """Integration test for SlidingWindowRateLimiter."""
 
 import pytest
+
 from ml_mcp.infrastructure.redis.rate_limiter import SlidingWindowRateLimiter
 
 

@@ -1,14 +1,14 @@
 """Result and artifact MCP tool handlers."""
 
 import io
-import json
 from typing import Any
+
 import pandas as pd
-from ml_mcp.domain.errors import ArtifactAccessDeniedError, ResourceNotFoundError
+
+from ml_mcp.domain.errors import ResourceNotFoundError
 from ml_mcp.domain.policies import Principal, Scope
 from ml_mcp.infrastructure.object_storage.s3 import get_storage_service
 from ml_mcp.infrastructure.postgres.repositories.artifacts import ArtifactRepository
-from ml_mcp.infrastructure.postgres.repositories.experiments import ExperimentRepository
 from ml_mcp.infrastructure.postgres.repositories.metrics import MetricRepository
 from ml_mcp.infrastructure.postgres.session import get_db_manager
 

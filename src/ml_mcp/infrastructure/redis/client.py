@@ -1,7 +1,9 @@
 """Async Redis connection management."""
 
 import logging
+
 from redis.asyncio import ConnectionPool, Redis
+
 from ml_mcp.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)

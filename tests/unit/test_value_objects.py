@@ -2,17 +2,15 @@
 
 import pytest
 from pydantic import ValidationError
+
 from ml_mcp.domain.value_objects import (
-    TaskType,
-    ModelFamily,
-    SplitStrategy,
-    SplitStrategyType,
-    EvaluationConfig,
-    ResourcePolicy,
-    ExperimentSpec,
     ColumnSchema,
     DatasetSchema,
+    EvaluationConfig,
+    ExperimentSpec,
     FeatureType,
+    SplitStrategyType,
+    TaskType,
 )
 
 

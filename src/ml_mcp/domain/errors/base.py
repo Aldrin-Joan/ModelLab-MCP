@@ -1,6 +1,7 @@
 """Domain exceptions with sanitized public messages and structured error codes."""
 
 from typing import Any
+
 from ml_mcp.domain.errors.codes import ErrorCode
 
 

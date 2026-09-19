@@ -3,8 +3,10 @@
 import datetime
 import logging
 from typing import Any
+
 import jwt
 from jwt.exceptions import InvalidTokenError, PyJWTError
+
 from ml_mcp.config import Settings, get_settings
 from ml_mcp.domain.errors import AuthenticationRequiredError
 from ml_mcp.domain.policies import Principal, Role
@@ -101,7 +103,7 @@ class TokenValidator:
         expires_in_minutes: int = 60,
     ) -> str:
         """Helper to generate signed JWT for development, testing, and internal callers."""
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         payload = {
             "iss": self.settings.auth.issuer,
             "aud": self.settings.auth.audience,

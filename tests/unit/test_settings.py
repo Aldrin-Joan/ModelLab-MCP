@@ -2,7 +2,8 @@
 
 import os
 from unittest.mock import patch
-from ml_mcp.config.settings import Settings, get_settings
+
+from ml_mcp.config.settings import Settings
 
 
 def test_default_settings():

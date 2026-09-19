@@ -3,9 +3,10 @@
 import os
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy import DateTime
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase
 
 
 def generate_uuid7() -> str:
@@ -28,7 +29,7 @@ def generate_uuid7() -> str:
 
 def utc_now() -> datetime:
     """Return timezone-aware current UTC datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Base(DeclarativeBase):

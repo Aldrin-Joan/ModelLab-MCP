@@ -1,6 +1,7 @@
 """Unit tests for ModelService and catalog seeding."""
 
 import pytest
+
 from ml_mcp.application.models.service import ModelService
 from ml_mcp.infrastructure.postgres.base import Base
 from ml_mcp.infrastructure.postgres.session import DatabaseManager

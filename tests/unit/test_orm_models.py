@@ -2,23 +2,8 @@
 
 import pytest
 from sqlalchemy.ext.asyncio import create_async_engine
+
 from ml_mcp.infrastructure.postgres.base import Base, generate_uuid7
-from ml_mcp.infrastructure.postgres.models import (
-    TenantOrm,
-    PrincipalOrm,
-    ProjectOrm,
-    ModelOrm,
-    ModelVersionOrm,
-    DatasetOrm,
-    DatasetVersionOrm,
-    ExperimentOrm,
-    ExperimentRunOrm,
-    MetricOrm,
-    AnalysisRunOrm,
-    ArtifactOrm,
-    OutboxEventOrm,
-    AuditEventOrm,
-)
 
 
 def test_uuid7_generation():

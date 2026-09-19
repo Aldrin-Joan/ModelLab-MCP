@@ -1,6 +1,7 @@
 """Strict Pydantic schemas for MCP tool arguments and responses."""
 
 from typing import Any
+
 from pydantic import BaseModel, Field
 
 

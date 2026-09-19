@@ -2,10 +2,10 @@
 
 import pytest
 from starlette.testclient import TestClient
-from ml_mcp.config import get_settings
-from ml_mcp.domain.policies import Principal, Role
+
+from ml_mcp.domain.policies import Role
 from ml_mcp.infrastructure.postgres.base import Base
-from ml_mcp.infrastructure.postgres.session import DatabaseManager, get_db_manager
+from ml_mcp.infrastructure.postgres.session import get_db_manager
 from ml_mcp.server.auth import get_token_validator
 from ml_mcp.server.http import create_http_app
 

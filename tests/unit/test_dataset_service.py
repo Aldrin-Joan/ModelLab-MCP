@@ -1,14 +1,16 @@
 """Unit tests for dataset validator and service."""
 
-import pytest
 from unittest.mock import MagicMock
-from ml_mcp.application.datasets.validator import DatasetValidator
+
+import pytest
+
 from ml_mcp.application.datasets.service import DatasetService
+from ml_mcp.application.datasets.validator import DatasetValidator
 from ml_mcp.domain.errors import DatasetValidationError
 from ml_mcp.domain.value_objects import DatasetFormat, FeatureType
 from ml_mcp.infrastructure.postgres.base import Base, generate_uuid7
+from ml_mcp.infrastructure.postgres.models import ProjectOrm, TenantOrm
 from ml_mcp.infrastructure.postgres.session import DatabaseManager
-from ml_mcp.infrastructure.postgres.models import TenantOrm, ProjectOrm
 
 
 def test_csv_validation_and_schema_extraction():

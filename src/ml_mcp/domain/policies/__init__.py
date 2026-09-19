@@ -1,8 +1,8 @@
 """Domain policies package."""
 
-from ml_mcp.domain.policies.rbac import Role, Scope, ROLE_PERMISSIONS, Principal
-from ml_mcp.domain.policies.tool_policy import ToolClass, ToolPolicy, TOOL_POLICIES
+from ml_mcp.domain.policies.rbac import ROLE_PERMISSIONS, Principal, Role, Scope
 from ml_mcp.domain.policies.tenant_isolation import validate_tenant_access
+from ml_mcp.domain.policies.tool_policy import TOOL_POLICIES, ToolClass, ToolPolicy
 
 __all__ = [
     "Role",

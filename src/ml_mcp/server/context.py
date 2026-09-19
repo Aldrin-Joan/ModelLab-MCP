@@ -1,9 +1,10 @@
 """Execution context and principal resolution for MCP tool invocations."""
 
-from contextvars import ContextVar
 import logging
+from contextvars import ContextVar
+
 from ml_mcp.domain.errors import AuthenticationRequiredError
-from ml_mcp.domain.policies import Principal, Role
+from ml_mcp.domain.policies import Principal
 from ml_mcp.server.middleware import LOCAL_STDIO_PRINCIPAL
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,8 @@
 """Experiment MCP tool handlers."""
 
 from typing import Any
+
 from ml_mcp.domain.errors import (
-    ExperimentAlreadyExistsError,
     ExperimentNotCancellableError,
     ResourceNotFoundError,
 )

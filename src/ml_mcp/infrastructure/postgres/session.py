@@ -4,6 +4,7 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -11,8 +12,8 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+
 from ml_mcp.config import Settings, get_settings
-from ml_mcp.infrastructure.postgres.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class DatabaseManager:
         return self._sessionmaker
 
     @asynccontextmanager
-    async def session(self) -> AsyncGenerator[AsyncSession, None]:
+    async def session(self) -> AsyncGenerator[AsyncSession]:
         """Provide a transactional async session scope."""
         async with self.sessionmaker() as sess:
             try:

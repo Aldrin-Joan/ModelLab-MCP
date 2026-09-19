@@ -1,7 +1,8 @@
 """Unit tests for OAuth 2.1 / OIDC Bearer JWT TokenValidator."""
 
-import pytest
 import jwt
+import pytest
+
 from ml_mcp.domain.errors import AuthenticationRequiredError
 from ml_mcp.domain.policies import Role, Scope
 from ml_mcp.server.auth import TokenValidator
@@ -65,7 +66,8 @@ def test_none_algorithm_attack_rejected():
         "exp": 9999999999,
     }
     # Hand-craft unsigned token
-    import base64, json
+    import base64
+    import json
     h_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip("=")
     p_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
     none_token = f"{h_b64}.{p_b64}."

@@ -1,6 +1,5 @@
 """Leak-free feature preprocessing and dataset splitting pipeline."""
 
-from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -12,6 +11,7 @@ from sklearn.model_selection import (
     train_test_split,
 )
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
 from ml_mcp.domain.value_objects import (
     SplitStrategy,
     SplitStrategyType,

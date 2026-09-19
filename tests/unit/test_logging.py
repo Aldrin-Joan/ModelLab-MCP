@@ -1,15 +1,12 @@
 """Unit tests for JSON structured logging."""
 
-import io
 import json
 import logging
-import sys
+
 from ml_mcp.infrastructure.telemetry.logging import (
     JSONFormatter,
-    configure_logging,
-    set_request_context,
     clear_request_context,
-    get_logger,
+    set_request_context,
 )
 
 

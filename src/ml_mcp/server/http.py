@@ -5,13 +5,12 @@ and enforces OAuth 2.1 / OIDC Bearer token authentication middleware.
 """
 
 import logging
-from typing import Any
+
 from starlette.applications import Starlette
-from starlette.middleware import Middleware
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
+
 from ml_mcp.config import get_settings
 from ml_mcp.infrastructure.object_storage.s3 import get_storage_service
 from ml_mcp.infrastructure.postgres.session import get_db_manager
@@ -163,6 +162,7 @@ def create_http_app() -> Starlette:
 def run_http() -> None:
     """CLI entrypoint for running the ModelLab HTTP server using uvicorn."""
     import uvicorn
+
     from ml_mcp.infrastructure.telemetry.logging import configure_logging
 
     configure_logging()

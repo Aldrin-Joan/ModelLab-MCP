@@ -1,13 +1,14 @@
 """Unit tests for RBAC, tool policies, and tenant isolation."""
 
 import pytest
+
 from ml_mcp.domain.errors import AuthorizationDeniedError
 from ml_mcp.domain.policies import (
+    TOOL_POLICIES,
+    Principal,
     Role,
     Scope,
-    Principal,
     validate_tenant_access,
-    TOOL_POLICIES,
 )
 
 

@@ -2,7 +2,8 @@
 
 import logging
 from typing import Any
-from ml_mcp.domain.errors import DomainError, ResourceLimitExceededError
+
+from ml_mcp.domain.errors import ResourceLimitExceededError
 from ml_mcp.domain.policies import (
     TOOL_POLICIES,
     Principal,

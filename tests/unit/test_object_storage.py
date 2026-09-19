@@ -1,6 +1,7 @@
 """Unit tests for S3 storage service."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
 from ml_mcp.infrastructure.object_storage.s3 import S3StorageService
 
 

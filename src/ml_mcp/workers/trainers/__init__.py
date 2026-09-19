@@ -2,16 +2,15 @@
 
 from ml_mcp.domain.value_objects import ModelFamily
 from ml_mcp.workers.trainers.base import BaseModelTrainer, TrainingResult
+from ml_mcp.workers.trainers.catboost_model import CatBoostTrainer
+from ml_mcp.workers.trainers.lightgbm_model import LightGBMTrainer
 from ml_mcp.workers.trainers.sklearn_models import (
-    LogisticRegressionTrainer,
-    RandomForestTrainer,
     LinearSVMTrainer,
+    LogisticRegressionTrainer,
     MLPTrainer,
+    RandomForestTrainer,
 )
 from ml_mcp.workers.trainers.xgboost_model import XGBoostTrainer
-from ml_mcp.workers.trainers.lightgbm_model import LightGBMTrainer
-from ml_mcp.workers.trainers.catboost_model import CatBoostTrainer
-
 
 TRAINER_MAP: dict[ModelFamily | str, type[BaseModelTrainer]] = {
     ModelFamily.LOGISTIC_REGRESSION: LogisticRegressionTrainer,

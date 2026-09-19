@@ -1,7 +1,9 @@
 """Role-Based Access Control (RBAC) and permission scope evaluation."""
 
 from enum import StrEnum
+
 from pydantic import BaseModel, Field
+
 from ml_mcp.domain.errors import AuthorizationDeniedError
 
 

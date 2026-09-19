@@ -2,7 +2,8 @@
 
 from enum import StrEnum
 from typing import Any
-from pydantic import BaseModel, Field, field_validator, model_validator
+
+from pydantic import BaseModel, Field, model_validator
 
 
 class TaskType(StrEnum):

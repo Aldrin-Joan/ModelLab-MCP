@@ -2,12 +2,14 @@
 
 import io
 from typing import Any
+
 import joblib
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.svm import LinearSVC, LinearSVR
+
 from ml_mcp.domain.value_objects import TaskType
 from ml_mcp.workers.metrics import MetricsCalculator
 from ml_mcp.workers.trainers.base import BaseModelTrainer, TrainingResult

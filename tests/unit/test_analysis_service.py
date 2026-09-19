@@ -1,6 +1,7 @@
 """Unit tests for AnalysisService and diagnostic evaluators."""
 
 import pytest
+
 from ml_mcp.application.analysis.diagnostics import (
     DataLeakageDetector,
     ErrorPatternAnalyzer,
@@ -100,8 +101,9 @@ async def test_analysis_service_execution():
         assert "recommended_next_experiments" in analysis
 
         # Verify analysis run was recorded in DB
-        from ml_mcp.infrastructure.postgres.models import AnalysisRunOrm
         from sqlalchemy import select
+
+        from ml_mcp.infrastructure.postgres.models import AnalysisRunOrm
         stmt = select(AnalysisRunOrm).where(AnalysisRunOrm.experiment_id == exp_id)
         run_record = (await sess.execute(stmt)).scalar_one_or_none()
         assert run_record is not None

@@ -1,7 +1,9 @@
 """Transactional Outbox processor dispatching experiment events to the task queue."""
 
 import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from ml_mcp.infrastructure.postgres.repositories.outbox import OutboxRepository
 from ml_mcp.infrastructure.queue.task_queue import RedisTaskQueue
 

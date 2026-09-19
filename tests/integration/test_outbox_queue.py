@@ -1,6 +1,7 @@
 """Integration tests for OutboxProcessor and RedisTaskQueue."""
 
 import pytest
+
 from ml_mcp.infrastructure.postgres.base import Base, generate_uuid7
 from ml_mcp.infrastructure.postgres.models import OutboxEventOrm
 from ml_mcp.infrastructure.postgres.session import DatabaseManager

@@ -1,31 +1,32 @@
 """Integration tests verifying full functionality of all repositories."""
 
 import pytest
+
 from ml_mcp.infrastructure.postgres.base import Base, generate_uuid7
-from ml_mcp.infrastructure.postgres.session import DatabaseManager
 from ml_mcp.infrastructure.postgres.models import (
-    TenantOrm,
-    ProjectOrm,
-    ModelOrm,
-    ModelVersionOrm,
+    ArtifactOrm,
+    AuditEventOrm,
     DatasetOrm,
     DatasetVersionOrm,
     ExperimentOrm,
     ExperimentRunOrm,
     MetricOrm,
-    ArtifactOrm,
+    ModelOrm,
+    ModelVersionOrm,
     OutboxEventOrm,
-    AuditEventOrm,
+    ProjectOrm,
+    TenantOrm,
 )
 from ml_mcp.infrastructure.postgres.repositories import (
-    ModelRepository,
+    ArtifactRepository,
+    AuditRepository,
     DatasetRepository,
     ExperimentRepository,
     MetricRepository,
-    ArtifactRepository,
+    ModelRepository,
     OutboxRepository,
-    AuditRepository,
 )
+from ml_mcp.infrastructure.postgres.session import DatabaseManager
 
 
 @pytest.fixture

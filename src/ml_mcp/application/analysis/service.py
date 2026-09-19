@@ -2,11 +2,12 @@
 
 import logging
 from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from ml_mcp.application.analysis.diagnostics import (
     DataLeakageDetector,
-    ErrorPatternAnalyzer,
     OverfittingDetector,
 )
 from ml_mcp.domain.errors import ResourceNotFoundError
@@ -72,9 +73,7 @@ class AnalysisService:
             },
             "statistical_observations": {
                 "primary_metric": exp.spec_json.get("evaluation_config", {}).get("primary_metric"),
-                "primary_metric_validation_value": val_metrics.get(
-                    exp.spec_json.get("evaluation_config", {}).get("primary_metric", ""), None
-                ),
+                "primary_metric_validation_value": val_metrics.get(exp.spec_json.get("evaluation_config", {}).get("primary_metric", "")),
             },
             "error_patterns": {
                 "observed_anomalies": len(leakage["signals"]),

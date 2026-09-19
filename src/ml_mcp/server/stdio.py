@@ -8,6 +8,7 @@ Adheres strictly to standard stream discipline:
 import asyncio
 import logging
 import sys
+
 from ml_mcp.infrastructure.telemetry.logging import configure_logging
 from ml_mcp.server.app import create_server
 

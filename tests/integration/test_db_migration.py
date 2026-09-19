@@ -2,9 +2,10 @@
 
 import pytest
 from sqlalchemy import text
+
+import ml_mcp.infrastructure.postgres.models  # noqa: F401
 from ml_mcp.infrastructure.postgres.base import Base
 from ml_mcp.infrastructure.postgres.session import DatabaseManager
-import ml_mcp.infrastructure.postgres.models  # noqa: F401
 
 
 @pytest.mark.asyncio

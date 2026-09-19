@@ -1,9 +1,8 @@
 """MCP Resources exposing system metadata and catalog information."""
 
 import json
-from typing import Any
+
 from ml_mcp.application.models.service import ModelService
-from ml_mcp.domain.policies import Principal, Role
 from ml_mcp.infrastructure.postgres.session import get_db_manager
 
 

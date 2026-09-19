@@ -6,6 +6,7 @@ import logging
 import time
 from dataclasses import asdict, dataclass
 from typing import Any
+
 from ml_mcp.config import Settings, get_settings
 from ml_mcp.infrastructure.postgres.base import generate_uuid7
 from ml_mcp.infrastructure.redis.client import RedisManager, get_redis_manager
@@ -85,7 +86,7 @@ class RedisTaskQueue:
             # Fallback to local queue
             try:
                 return await asyncio.wait_for(self._local_queue.get(), timeout=timeout_seconds)
-            except (asyncio.TimeoutError, TimeoutError):
+            except TimeoutError:
                 return None
 
     async def get_queue_depth(self) -> int:

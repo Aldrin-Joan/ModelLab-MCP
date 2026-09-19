@@ -1,15 +1,16 @@
 """Integration test for WorkerRunner."""
 
 import io
+from unittest.mock import MagicMock
+
 import pandas as pd
 import pytest
-from unittest.mock import MagicMock
+
 from ml_mcp.application.models.service import ModelService
 from ml_mcp.domain.value_objects import (
     EvaluationConfig,
     ExperimentSpec,
     ResourcePolicy,
-    SplitStrategy,
     TaskType,
 )
 from ml_mcp.infrastructure.postgres.base import Base, generate_uuid7
