@@ -57,7 +57,9 @@ def test_confusion_matrix_analyzer():
 @pytest.mark.asyncio
 async def test_analysis_service_execution():
     db_mgr = DatabaseManager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:analysisdb?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:analysisdb?mode=memory&cache=shared&uri=true"
+    )
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -71,9 +73,27 @@ async def test_analysis_service_execution():
         t = TenantOrm(id=tenant_id, name="Analysis Tenant")
         p = ProjectOrm(id=project_id, tenant_id=tenant_id, name="Analysis Project")
         m = ModelOrm(id="rf", name="RF", family="random_forest")
-        mv = ModelVersionOrm(id=mv_id, model_id="rf", version="1.0", container_image_digest="sha256:1", supported_task_types=["binary_classification"])
-        ds = DatasetOrm(id="ds", tenant_id=tenant_id, project_id=project_id, name="DS", format="parquet")
-        dsv = DatasetVersionOrm(id=dsv_id, dataset_id="ds", version="1.0", schema_json={}, row_count=100, column_count=2, size_bytes=10, content_hash="h", storage_uri="s3://")
+        mv = ModelVersionOrm(
+            id=mv_id,
+            model_id="rf",
+            version="1.0",
+            container_image_digest="sha256:1",
+            supported_task_types=["binary_classification"],
+        )
+        ds = DatasetOrm(
+            id="ds", tenant_id=tenant_id, project_id=project_id, name="DS", format="parquet"
+        )
+        dsv = DatasetVersionOrm(
+            id=dsv_id,
+            dataset_id="ds",
+            version="1.0",
+            schema_json={},
+            row_count=100,
+            column_count=2,
+            size_bytes=10,
+            content_hash="h",
+            storage_uri="s3://",
+        )
 
         exp = ExperimentOrm(
             id=exp_id,
@@ -81,12 +101,28 @@ async def test_analysis_service_execution():
             project_id=project_id,
             dataset_version_id=dsv_id,
             model_version_id=mv_id,
-            spec_json={"task_type": "binary_classification", "target_column": "target", "evaluation_config": {"primary_metric": "roc_auc"}},
+            spec_json={
+                "task_type": "binary_classification",
+                "target_column": "target",
+                "evaluation_config": {"primary_metric": "roc_auc"},
+            },
             status="SUCCEEDED",
             created_by="user-analysis",
         )
-        m1 = MetricOrm(experiment_id=exp_id, run_id="run-1", metric_name="roc_auc", metric_value=0.95, split="train")
-        m2 = MetricOrm(experiment_id=exp_id, run_id="run-1", metric_name="roc_auc", metric_value=0.92, split="validation")
+        m1 = MetricOrm(
+            experiment_id=exp_id,
+            run_id="run-1",
+            metric_name="roc_auc",
+            metric_value=0.95,
+            split="train",
+        )
+        m2 = MetricOrm(
+            experiment_id=exp_id,
+            run_id="run-1",
+            metric_name="roc_auc",
+            metric_value=0.92,
+            split="validation",
+        )
 
         sess.add_all([t, p, m, mv, ds, dsv, exp, m1, m2])
 
@@ -104,6 +140,7 @@ async def test_analysis_service_execution():
         from sqlalchemy import select
 
         from ml_mcp.infrastructure.postgres.models import AnalysisRunOrm
+
         stmt = select(AnalysisRunOrm).where(AnalysisRunOrm.experiment_id == exp_id)
         run_record = (await sess.execute(stmt)).scalar_one_or_none()
         assert run_record is not None

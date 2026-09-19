@@ -22,7 +22,10 @@ def test_valid_token_issuance_and_validation():
     assert principal.principal_id == "researcher-01"
     assert principal.tenant_id == "tenant-alpha"
     assert principal.role == Role.RESEARCHER
-    assert Scope.EXPERIMENTS_CREATE in principal.scopes or Scope.EXPERIMENTS_CREATE.value in principal.scopes
+    assert (
+        Scope.EXPERIMENTS_CREATE in principal.scopes
+        or Scope.EXPERIMENTS_CREATE.value in principal.scopes
+    )
     assert principal.project_ids == ["proj-100"]
 
 
@@ -48,7 +51,9 @@ def test_wrong_issuer_rejected():
         "sub": "user-evil",
         "exp": 9999999999,
     }
-    forged = jwt.encode(payload, key=validator.settings.auth.secret_key.get_secret_value(), algorithm="HS256")
+    forged = jwt.encode(
+        payload, key=validator.settings.auth.secret_key.get_secret_value(), algorithm="HS256"
+    )
 
     with pytest.raises(AuthenticationRequiredError) as exc:
         validator.validate_token(forged)
@@ -68,6 +73,7 @@ def test_none_algorithm_attack_rejected():
     # Hand-craft unsigned token
     import base64
     import json
+
     h_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip("=")
     p_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
     none_token = f"{h_b64}.{p_b64}."

@@ -24,12 +24,17 @@ class CatBoostTrainer(BaseModelTrainer):
         task_type: TaskType,
         hyperparameters: dict[str, Any],
         random_seed: int = 42,
+        max_cpu_cores: int | None = None,
     ) -> TrainingResult:
+        thread_count = (
+            max_cpu_cores if max_cpu_cores is not None else hyperparameters.get("thread_count", -1)
+        )
         params = {
             "random_seed": random_seed,
             "iterations": hyperparameters.get("iterations", 100),
             "depth": hyperparameters.get("depth", 6),
             "learning_rate": hyperparameters.get("learning_rate", 0.1),
+            "thread_count": thread_count,
             "verbose": False,
         }
 
@@ -42,8 +47,12 @@ class CatBoostTrainer(BaseModelTrainer):
             val_pred = model.predict(X_val)
             val_proba = model.predict_proba(X_val)
 
-            train_metrics = MetricsCalculator.compute_classification_metrics(y_tr, train_pred, train_proba, task_type)
-            val_metrics = MetricsCalculator.compute_classification_metrics(y_val, val_pred, val_proba, task_type)
+            train_metrics = MetricsCalculator.compute_classification_metrics(
+                y_tr, train_pred, train_proba, task_type
+            )
+            val_metrics = MetricsCalculator.compute_classification_metrics(
+                y_val, val_pred, val_proba, task_type
+            )
         else:
             model = cb.CatBoostRegressor(**params)
             model.fit(X_tr, y_tr, eval_set=(X_val, y_val), verbose=False)

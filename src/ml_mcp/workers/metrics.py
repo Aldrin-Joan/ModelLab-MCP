@@ -1,5 +1,7 @@
 """Comprehensive evaluation metrics computation engine for classification and regression."""
 
+import contextlib
+
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
@@ -35,10 +37,31 @@ class MetricsCalculator:
         metrics: dict[str, float | list[list[int]]] = {}
 
         metrics["accuracy"] = float(accuracy_score(y_true, y_pred))
-        metrics["f1"] = float(f1_score(y_true, y_pred, average="weighted" if task_type == TaskType.MULTICLASS_CLASSIFICATION else "binary", zero_division=0))
+        metrics["f1"] = float(
+            f1_score(
+                y_true,
+                y_pred,
+                average="weighted" if task_type == TaskType.MULTICLASS_CLASSIFICATION else "binary",
+                zero_division=0,
+            )
+        )
         metrics["f1_macro"] = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
-        metrics["precision"] = float(precision_score(y_true, y_pred, average="weighted" if task_type == TaskType.MULTICLASS_CLASSIFICATION else "binary", zero_division=0))
-        metrics["recall"] = float(recall_score(y_true, y_pred, average="weighted" if task_type == TaskType.MULTICLASS_CLASSIFICATION else "binary", zero_division=0))
+        metrics["precision"] = float(
+            precision_score(
+                y_true,
+                y_pred,
+                average="weighted" if task_type == TaskType.MULTICLASS_CLASSIFICATION else "binary",
+                zero_division=0,
+            )
+        )
+        metrics["recall"] = float(
+            recall_score(
+                y_true,
+                y_pred,
+                average="weighted" if task_type == TaskType.MULTICLASS_CLASSIFICATION else "binary",
+                zero_division=0,
+            )
+        )
 
         # Confusion matrix
         cm = confusion_matrix(y_true, y_pred)
@@ -46,10 +69,12 @@ class MetricsCalculator:
 
         # Probability-based metrics
         if y_proba is not None:
-            try:
+            with contextlib.suppress(Exception):
                 if task_type == TaskType.BINARY_CLASSIFICATION:
                     # y_proba can be 1D or 2D
-                    proba_pos = y_proba[:, 1] if y_proba.ndim == 2 and y_proba.shape[1] > 1 else y_proba
+                    proba_pos = (
+                        y_proba[:, 1] if y_proba.ndim == 2 and y_proba.shape[1] > 1 else y_proba
+                    )
                     metrics["roc_auc"] = float(roc_auc_score(y_true, proba_pos))
                     metrics["pr_auc"] = float(average_precision_score(y_true, proba_pos))
                     metrics["brier_score"] = float(brier_score_loss(y_true, proba_pos))
@@ -57,9 +82,6 @@ class MetricsCalculator:
                 elif task_type == TaskType.MULTICLASS_CLASSIFICATION:
                     metrics["roc_auc"] = float(roc_auc_score(y_true, y_proba, multi_class="ovr"))
                     metrics["log_loss"] = float(log_loss(y_true, y_proba))
-            except Exception:
-                # Handle edge cases (e.g. single-class batch in fold)
-                pass
 
         return metrics
 
@@ -82,9 +104,7 @@ class MetricsCalculator:
             "explained_variance": float(explained_variance_score(y_true, y_pred)),
         }
 
-        try:
+        with contextlib.suppress(Exception):
             metrics["mape"] = float(mean_absolute_percentage_error(y_true, y_pred))
-        except Exception:
-            pass
 
         return metrics

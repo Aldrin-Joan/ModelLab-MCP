@@ -23,11 +23,9 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY pyproject.toml README.md ./
+COPY src/ ./src/
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir .
-
-COPY src/ ./src/
-RUN pip install --no-cache-dir --no-deps -e .
 
 # -----------------------------------------------------------------------------
 # Stage 2: ml-mcp-api (FastMCP 4 Control Plane Server)
@@ -94,4 +92,4 @@ RUN groupadd -g 10002 workergroup && \
 
 USER 10002:10002
 
-ENTRYPOINT ["/opt/venv/bin/python", "-m", "ml_mcp.workers.runner"]
+ENTRYPOINT ["/opt/venv/bin/python", "-m", "ml_mcp.workers.daemon"]

@@ -11,6 +11,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 logger = logging.getLogger(__name__)
 
+
 # Global metric instruments container
 class MetricInstruments:
     def __init__(self, meter: metrics.Meter) -> None:
@@ -80,7 +81,11 @@ class MetricInstruments:
 _instruments: MetricInstruments | None = None
 
 
-def init_telemetry(service_name: str = "ml-mcp-service", enabled: bool = False, otlp_endpoint: str = "http://localhost:4317") -> MetricInstruments:
+def init_telemetry(
+    service_name: str = "ml-mcp-service",
+    enabled: bool = False,
+    otlp_endpoint: str = "http://localhost:4317",
+) -> MetricInstruments:
     """Initialize OpenTelemetry SDK with resource attributes and OTLP exporters if enabled."""
     global _instruments
     resource = Resource.create({"service.name": service_name})
@@ -103,7 +108,9 @@ def init_telemetry(service_name: str = "ml-mcp-service", enabled: bool = False, 
             metrics.set_meter_provider(meter_provider)
             logger.info("OpenTelemetry initialized with OTLP endpoint: %s", otlp_endpoint)
         except Exception as exc:
-            logger.warning("Failed to initialize OTLP exporter, falling back to default providers: %s", exc)
+            logger.warning(
+                "Failed to initialize OTLP exporter, falling back to default providers: %s", exc
+            )
             trace.set_tracer_provider(TracerProvider(resource=resource))
             metrics.set_meter_provider(MeterProvider(resource=resource))
     else:

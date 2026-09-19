@@ -71,29 +71,44 @@ class Principal(BaseModel):
 
     principal_id: str = Field(..., min_length=1)
     tenant_id: str = Field(..., min_length=1)
-    project_ids: list[str] = Field(default_factory=list, description="List of authorized project IDs, empty allows all tenant projects")
+    project_ids: list[str] = Field(
+        default_factory=list,
+        description="List of authorized project IDs, empty allows all tenant projects",
+    )
     role: Role = Role.VIEWER
-    scopes: set[str] = Field(default_factory=set, description="Explicit scopes granted via token claims")
+    scopes: set[str] = Field(
+        default_factory=set, description="Explicit scopes granted via token claims"
+    )
 
     def has_permission(self, required_scope: Scope) -> bool:
-        """Evaluate if the principal holds the required permission via role or explicit scopes.
+        """Evaluate if the principal holds the required permission via role and scope intersection.
 
-        If explicit token scopes are present, permission is evaluated against the granted token scopes.
-        If no explicit scopes are set on the principal, permission defaults to role-based privileges.
+        Enforces strict OAuth 2.1 scope attenuation:
+        1. The requested scope MUST be allowed by the principal's role.
+        2. If explicit token scopes are present, the requested scope MUST also be granted
+           by the token (or covered by a wildcard '*').
         """
-        if self.role == Role.ADMIN or "*" in self.scopes or Scope.ADMIN.value in self.scopes or Scope.ADMIN in self.scopes:
+        role_allowed = ROLE_PERMISSIONS.get(self.role, set())
+        if required_scope not in role_allowed:
+            return False
+
+        # If no explicit token scopes are set, the principal has full role permissions
+        if not self.scopes:
             return True
 
-        # If token specifies explicit scopes, evaluate against the token's granted scopes
-        if self.scopes:
-            scope_vals = {s.value if isinstance(s, Scope) else s for s in self.scopes}
-            req_val = required_scope.value
-            req_short = req_val.removeprefix("ml:")
-            return (req_val in scope_vals) or (req_short in scope_vals)
+        # If explicit scopes are set, evaluate scope intersection
+        scope_vals = {s.value if isinstance(s, Scope) else s for s in self.scopes}
+        req_val = required_scope.value
+        req_short = req_val.removeprefix("ml:")
 
-        # If no explicit scopes specified, fallback to full role permissions
-        role_allowed = ROLE_PERMISSIONS.get(self.role, set())
-        return required_scope in role_allowed
+        return (
+            "*" in self.scopes
+            or "admin" in scope_vals
+            or Scope.ADMIN.value in scope_vals
+            or Scope.ADMIN in self.scopes
+            or req_val in scope_vals
+            or req_short in scope_vals
+        )
 
     def enforce_permission(self, required_scope: Scope) -> None:
         """Enforce permission, raising AuthorizationDeniedError if missing."""

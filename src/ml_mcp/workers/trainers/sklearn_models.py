@@ -27,13 +27,16 @@ class LogisticRegressionTrainer(BaseModelTrainer):
         task_type: TaskType,
         hyperparameters: dict[str, Any],
         random_seed: int = 42,
+        max_cpu_cores: int | None = None,
     ) -> TrainingResult:
-        params = {
+        params: dict[str, Any] = {
             "random_state": random_seed,
             "max_iter": hyperparameters.get("max_iter", 200),
             "C": hyperparameters.get("C", 1.0),
             "penalty": hyperparameters.get("penalty", "l2"),
         }
+        if "n_jobs" in hyperparameters:
+            params["n_jobs"] = hyperparameters["n_jobs"]
         model = LogisticRegression(**params)
         model.fit(X_tr, y_tr)
 
@@ -42,8 +45,12 @@ class LogisticRegressionTrainer(BaseModelTrainer):
         val_pred = model.predict(X_val)
         val_proba = model.predict_proba(X_val)
 
-        train_metrics = MetricsCalculator.compute_classification_metrics(y_tr, train_pred, train_proba, task_type)
-        val_metrics = MetricsCalculator.compute_classification_metrics(y_val, val_pred, val_proba, task_type)
+        train_metrics = MetricsCalculator.compute_classification_metrics(
+            y_tr, train_pred, train_proba, task_type
+        )
+        val_metrics = MetricsCalculator.compute_classification_metrics(
+            y_val, val_pred, val_proba, task_type
+        )
 
         # Feature importances from coefficients
         feat_imp: dict[str, float] = {}
@@ -78,13 +85,15 @@ class RandomForestTrainer(BaseModelTrainer):
         task_type: TaskType,
         hyperparameters: dict[str, Any],
         random_seed: int = 42,
+        max_cpu_cores: int | None = None,
     ) -> TrainingResult:
+        n_jobs = max_cpu_cores if max_cpu_cores is not None else hyperparameters.get("n_jobs", -1)
         params = {
             "random_state": random_seed,
             "n_estimators": hyperparameters.get("n_estimators", 100),
             "max_depth": hyperparameters.get("max_depth", 10),
             "min_samples_split": hyperparameters.get("min_samples_split", 2),
-            "n_jobs": -1,
+            "n_jobs": n_jobs,
         }
 
         if task_type in (TaskType.BINARY_CLASSIFICATION, TaskType.MULTICLASS_CLASSIFICATION):
@@ -96,8 +105,12 @@ class RandomForestTrainer(BaseModelTrainer):
             val_pred = model.predict(X_val)
             val_proba = model.predict_proba(X_val)
 
-            train_metrics = MetricsCalculator.compute_classification_metrics(y_tr, train_pred, train_proba, task_type)
-            val_metrics = MetricsCalculator.compute_classification_metrics(y_val, val_pred, val_proba, task_type)
+            train_metrics = MetricsCalculator.compute_classification_metrics(
+                y_tr, train_pred, train_proba, task_type
+            )
+            val_metrics = MetricsCalculator.compute_classification_metrics(
+                y_val, val_pred, val_proba, task_type
+            )
         else:
             model = RandomForestRegressor(**params)
             model.fit(X_tr, y_tr)
@@ -140,6 +153,7 @@ class LinearSVMTrainer(BaseModelTrainer):
         task_type: TaskType,
         hyperparameters: dict[str, Any],
         random_seed: int = 42,
+        max_cpu_cores: int | None = None,
     ) -> TrainingResult:
         params = {
             "random_state": random_seed,
@@ -153,8 +167,12 @@ class LinearSVMTrainer(BaseModelTrainer):
 
             train_pred = model.predict(X_tr)
             val_pred = model.predict(X_val)
-            train_metrics = MetricsCalculator.compute_classification_metrics(y_tr, train_pred, None, task_type)
-            val_metrics = MetricsCalculator.compute_classification_metrics(y_val, val_pred, None, task_type)
+            train_metrics = MetricsCalculator.compute_classification_metrics(
+                y_tr, train_pred, None, task_type
+            )
+            val_metrics = MetricsCalculator.compute_classification_metrics(
+                y_val, val_pred, None, task_type
+            )
             val_proba = None
         else:
             model = LinearSVR(**params)
@@ -198,6 +216,7 @@ class MLPTrainer(BaseModelTrainer):
         task_type: TaskType,
         hyperparameters: dict[str, Any],
         random_seed: int = 42,
+        max_cpu_cores: int | None = None,
     ) -> TrainingResult:
         params = {
             "random_state": random_seed,
@@ -215,8 +234,12 @@ class MLPTrainer(BaseModelTrainer):
             val_pred = model.predict(X_val)
             val_proba = model.predict_proba(X_val)
 
-            train_metrics = MetricsCalculator.compute_classification_metrics(y_tr, train_pred, train_proba, task_type)
-            val_metrics = MetricsCalculator.compute_classification_metrics(y_val, val_pred, val_proba, task_type)
+            train_metrics = MetricsCalculator.compute_classification_metrics(
+                y_tr, train_pred, train_proba, task_type
+            )
+            val_metrics = MetricsCalculator.compute_classification_metrics(
+                y_val, val_pred, val_proba, task_type
+            )
         else:
             model = MLPRegressor(**params)
             model.fit(X_tr, y_tr)

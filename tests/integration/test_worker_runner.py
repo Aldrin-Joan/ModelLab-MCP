@@ -28,7 +28,9 @@ from ml_mcp.workers.runner import WorkerRunner
 @pytest.fixture
 async def db():
     db_mgr = DatabaseManager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:runnerdb?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:runnerdb?mode=memory&cache=shared&uri=true"
+    )
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield db_mgr
@@ -56,15 +58,21 @@ async def test_worker_runner_execution(db: DatabaseManager):
 
     mock_storage.put_object.side_effect = mock_put
     mock_storage.get_object.side_effect = mock_get
-    mock_storage.get_dataset_key.return_value = f"tenants/{tenant_id}/datasets/{dataset_id}/1.0/data.parquet"
-    mock_storage.get_experiment_artifact_key.side_effect = lambda tid, eid, atype, fn: f"tenants/{tid}/experiments/{eid}/{atype}/{fn}"
+    mock_storage.get_dataset_key.return_value = (
+        f"tenants/{tenant_id}/datasets/{dataset_id}/1.0/data.parquet"
+    )
+    mock_storage.get_experiment_artifact_key.side_effect = lambda tid, eid, atype, fn: (
+        f"tenants/{tid}/experiments/{eid}/{atype}/{fn}"
+    )
 
     # Prepare tabular dataset
-    df = pd.DataFrame({
-        "num1": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0] * 5,
-        "num2": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0] * 5,
-        "target": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1] * 5,
-    })
+    df = pd.DataFrame(
+        {
+            "num1": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0] * 5,
+            "num2": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0] * 5,
+            "target": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1] * 5,
+        }
+    )
     buf = io.BytesIO()
     df.to_parquet(buf, index=False)
     storage_dict[mock_storage.get_dataset_key.return_value] = buf.getvalue()
@@ -77,16 +85,22 @@ async def test_worker_runner_execution(db: DatabaseManager):
 
         model_svc = ModelService(sess)
         await model_svc.seed_catalog()
-        rf_model = await model_svc.get_model("random_forest")
-        model_version_id = rf_model["versions"][0]["version"]
+        await model_svc.get_model("random_forest")
 
         # Fetch actual model_version ORM id
         from ml_mcp.infrastructure.postgres.repositories.models import ModelRepository
+
         m_repo = ModelRepository(sess)
         mv_orm = await m_repo.get_version("random_forest", "1.0.0")
         assert mv_orm is not None
 
-        ds = DatasetOrm(id=dataset_id, tenant_id=tenant_id, project_id=project_id, name="Runner DS", format="parquet")
+        ds = DatasetOrm(
+            id=dataset_id,
+            tenant_id=tenant_id,
+            project_id=project_id,
+            name="Runner DS",
+            format="parquet",
+        )
         dsv = DatasetVersionOrm(
             id=dsv_id,
             dataset_id=dataset_id,
@@ -137,6 +151,7 @@ async def test_worker_runner_execution(db: DatabaseManager):
     # Verify final state in DB
     async with db.session() as sess:
         from ml_mcp.infrastructure.postgres.repositories.experiments import ExperimentRepository
+
         e_repo = ExperimentRepository(sess)
         saved_exp = await e_repo.get_experiment(tenant_id, exp_id)
         assert saved_exp is not None

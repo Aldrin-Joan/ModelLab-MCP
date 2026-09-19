@@ -30,4 +30,6 @@ class WorkerSandbox:
             return await asyncio.wait_for(coro_fn(*args, **kwargs), timeout=self.timeout_seconds)
         except TimeoutError as exc:
             logger.error("Worker execution timed out after %d seconds", self.timeout_seconds)
-            raise ResourceLimitExceededError("execution_time", f"{self.timeout_seconds}s", "timeout") from exc
+            raise ResourceLimitExceededError(
+                "execution_time", f"{self.timeout_seconds}s", "timeout"
+            ) from exc

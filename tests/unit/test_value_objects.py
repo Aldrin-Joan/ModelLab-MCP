@@ -23,7 +23,9 @@ def test_valid_experiment_spec():
         task_type=TaskType.BINARY_CLASSIFICATION,
         target_column="target",
         feature_columns=["f1", "f2"],
-        evaluation_config=EvaluationConfig(primary_metric="roc_auc", additional_metrics=["accuracy", "f1"]),
+        evaluation_config=EvaluationConfig(
+            primary_metric="roc_auc", additional_metrics=["accuracy", "f1"]
+        ),
         created_by="user-1",
     )
     assert spec.split_strategy.strategy == SplitStrategyType.TRAIN_TEST_SPLIT

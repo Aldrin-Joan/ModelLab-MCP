@@ -3,8 +3,13 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from dotenv import load_dotenv
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load local .env to prioritize ModelLab local services over host environment variables
+load_dotenv(override=True)
+
 
 
 class AppSettings(BaseSettings):
@@ -62,6 +67,14 @@ class DatabaseSettings(BaseSettings):
     pool_timeout: float = 30.0
     pool_recycle: int = 1800
     echo: bool = False
+
+    @field_validator("url", mode="after")
+    @classmethod
+    def ensure_asyncpg_driver(cls, v: str) -> str:
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
 
 
 class RedisSettings(BaseSettings):
@@ -150,6 +163,10 @@ class Settings(BaseSettings):
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     otel: OtelSettings = Field(default_factory=OtelSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
+
+    @property
+    def app_env(self) -> str:
+        return self.app.env
 
 
 @lru_cache(maxsize=1)

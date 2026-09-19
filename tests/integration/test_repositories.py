@@ -32,7 +32,9 @@ from ml_mcp.infrastructure.postgres.session import DatabaseManager
 @pytest.fixture
 async def db():
     db_mgr = DatabaseManager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:repodb?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:repodb?mode=memory&cache=shared&uri=true"
+    )
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield db_mgr
@@ -154,7 +156,9 @@ async def test_full_repository_suite(db: DatabaseManager):
 
     async with db.session() as sess:
         repo = ExperimentRepository(sess)
-        updated_run = await repo.update_run(run_id, "SUCCEEDED", duration_seconds=12.5, end_time=True)
+        updated_run = await repo.update_run(
+            run_id, "SUCCEEDED", duration_seconds=12.5, end_time=True
+        )
         assert updated_run is True
         latest_run = await repo.get_latest_run(exp_id)
         assert latest_run is not None
@@ -165,8 +169,20 @@ async def test_full_repository_suite(db: DatabaseManager):
     async with db.session() as sess:
         repo = MetricRepository(sess)
         metrics = [
-            MetricOrm(experiment_id=exp_id, run_id=run_id, metric_name="roc_auc", metric_value=0.92, split="validation"),
-            MetricOrm(experiment_id=exp_id, run_id=run_id, metric_name="f1", metric_value=0.85, split="validation"),
+            MetricOrm(
+                experiment_id=exp_id,
+                run_id=run_id,
+                metric_name="roc_auc",
+                metric_value=0.92,
+                split="validation",
+            ),
+            MetricOrm(
+                experiment_id=exp_id,
+                run_id=run_id,
+                metric_name="f1",
+                metric_value=0.85,
+                split="validation",
+            ),
         ]
         await repo.record_metrics(metrics)
 

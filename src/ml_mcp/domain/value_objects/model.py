@@ -39,7 +39,9 @@ class ModelMetadata(BaseModel):
     family: ModelFamily
     supported_task_types: list[TaskType]
     approval_status: ApprovalStatus = ApprovalStatus.PENDING
-    container_image_digest: str = Field(..., description="SHA-256 digest of verified worker container image")
+    container_image_digest: str = Field(
+        ..., description="SHA-256 digest of verified worker container image"
+    )
     artifact_digest: str | None = None
     supported_hyperparameters: list[HyperparameterConstraint] = Field(default_factory=list)
     license: str = "Apache-2.0"

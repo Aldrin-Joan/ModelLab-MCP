@@ -24,13 +24,15 @@ class LightGBMTrainer(BaseModelTrainer):
         task_type: TaskType,
         hyperparameters: dict[str, Any],
         random_seed: int = 42,
+        max_cpu_cores: int | None = None,
     ) -> TrainingResult:
+        n_jobs = max_cpu_cores if max_cpu_cores is not None else hyperparameters.get("n_jobs", -1)
         params = {
             "random_state": random_seed,
             "n_estimators": hyperparameters.get("n_estimators", 100),
             "num_leaves": hyperparameters.get("num_leaves", 31),
             "learning_rate": hyperparameters.get("learning_rate", 0.1),
-            "n_jobs": -1,
+            "n_jobs": n_jobs,
             "verbose": -1,
         }
 
@@ -43,8 +45,12 @@ class LightGBMTrainer(BaseModelTrainer):
             val_pred = model.predict(X_val)
             val_proba = model.predict_proba(X_val)
 
-            train_metrics = MetricsCalculator.compute_classification_metrics(y_tr, train_pred, train_proba, task_type)
-            val_metrics = MetricsCalculator.compute_classification_metrics(y_val, val_pred, val_proba, task_type)
+            train_metrics = MetricsCalculator.compute_classification_metrics(
+                y_tr, train_pred, train_proba, task_type
+            )
+            val_metrics = MetricsCalculator.compute_classification_metrics(
+                y_val, val_pred, val_proba, task_type
+            )
         else:
             model = lgb.LGBMRegressor(**params)
             model.fit(X_tr, y_tr, eval_set=[(X_val, y_val)])

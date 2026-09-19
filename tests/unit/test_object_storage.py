@@ -9,7 +9,9 @@ def test_tenant_path_helpers():
     key = S3StorageService.get_dataset_key("t-123", "ds-456", "v1.0", "train.parquet")
     assert key == "tenants/t-123/datasets/ds-456/v1.0/train.parquet"
 
-    artifact_key = S3StorageService.get_experiment_artifact_key("t-123", "exp-789", "predictions", "test_preds.parquet")
+    artifact_key = S3StorageService.get_experiment_artifact_key(
+        "t-123", "exp-789", "predictions", "test_preds.parquet"
+    )
     assert artifact_key == "tenants/t-123/experiments/exp-789/predictions/test_preds.parquet"
 
     model_key = S3StorageService.get_model_key("t-123", "mod-999", "v2.0")

@@ -48,7 +48,9 @@ class ValidateDatasetInput(BaseModel):
 class InspectDatasetInput(BaseModel):
     dataset_id: str = Field(..., description="Dataset ID to inspect")
     version: str = Field(default="1.0", description="Dataset version")
-    sample_rows: int = Field(default=5, ge=1, le=50, description="Number of preview records to return")
+    sample_rows: int = Field(
+        default=5, ge=1, le=50, description="Number of preview records to return"
+    )
 
 
 # 3. Experiment Schemas
@@ -56,9 +58,13 @@ class CreateExperimentInput(BaseModel):
     project_id: str = Field(..., description="Target project ID")
     dataset_version_id: str = Field(..., description="Registered DatasetVersion ID")
     model_version_id: str = Field(..., description="Registered ModelVersion ID")
-    task_type: str = Field(..., description="'binary_classification', 'multiclass_classification', or 'regression'")
+    task_type: str = Field(
+        ..., description="'binary_classification', 'multiclass_classification', or 'regression'"
+    )
     target_column: str = Field(..., description="Name of column to predict")
-    feature_columns: list[str] | None = Field(default=None, description="Subset of features to train on")
+    feature_columns: list[str] | None = Field(
+        default=None, description="Subset of features to train on"
+    )
     primary_metric: str = Field(default="roc_auc", description="Primary optimization metric")
     additional_metrics: list[str] = Field(default_factory=list)
     hyperparameters: dict[str, Any] = Field(default_factory=dict)
@@ -100,7 +106,9 @@ class ReadExperimentArtifactInput(BaseModel):
 
 
 class CompareExperimentsInput(BaseModel):
-    experiment_ids: list[str] = Field(..., min_length=2, max_length=10, description="List of experiment IDs to compare")
+    experiment_ids: list[str] = Field(
+        ..., min_length=2, max_length=10, description="List of experiment IDs to compare"
+    )
 
 
 # 5. Analysis Schemas

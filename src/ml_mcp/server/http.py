@@ -99,6 +99,7 @@ async def health_ready(request: Request) -> JSONResponse:
     # 1. Database Check
     try:
         from sqlalchemy import text
+
         async with get_db_manager().session() as sess:
             await sess.execute(text("SELECT 1"))
         checks["database"] = "healthy"
@@ -119,7 +120,7 @@ async def health_ready(request: Request) -> JSONResponse:
     try:
         storage = get_storage_service()
         # Verify storage client initialized
-        if storage.s3_client is not None:
+        if storage.client is not None:
             checks["object_store"] = "healthy"
         else:
             checks["object_store"] = "uninitialized"

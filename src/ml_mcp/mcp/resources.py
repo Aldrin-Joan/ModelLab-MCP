@@ -22,10 +22,13 @@ async def read_model_details_resource(model_id: str) -> str:
         return json.dumps(details, indent=2)
 
 
-async def read_experiment_metrics_resource(experiment_id: str, tenant_id: str = "default-tenant") -> str:
+async def read_experiment_metrics_resource(
+    experiment_id: str, tenant_id: str = "default-tenant"
+) -> str:
     """Read metrics for an experiment (modellab://experiments/{experiment_id}/metrics)."""
     async with get_db_manager().session() as sess:
         from ml_mcp.infrastructure.postgres.repositories.metrics import MetricRepository
+
         repo = MetricRepository(sess)
         metrics = await repo.get_metrics(tenant_id, experiment_id)
         payload = {m.metric_name: m.metric_value for m in metrics}

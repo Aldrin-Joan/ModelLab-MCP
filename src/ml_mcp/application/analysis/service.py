@@ -41,7 +41,6 @@ class AnalysisService:
 
         train_metrics: dict[str, float] = {}
         val_metrics: dict[str, float] = {}
-        confusion_mat: list[list[int]] | None = None
 
         for m in all_metrics:
             if m.split == "train":
@@ -57,12 +56,20 @@ class AnalysisService:
         # 4. Synthesize recommendations
         recommendations: list[str] = []
         if overfitting["overfitting_detected"]:
-            recommendations.append("Increase regularization (e.g. increase alpha, reduce max_depth, or increase min_samples_split).")
-            recommendations.append("Apply cross-validation (K-Fold) to evaluate variance across folds.")
+            recommendations.append(
+                "Increase regularization (e.g. increase alpha, reduce max_depth, or increase min_samples_split)."
+            )
+            recommendations.append(
+                "Apply cross-validation (K-Fold) to evaluate variance across folds."
+            )
         if leakage["leakage_risk_detected"]:
-            recommendations.append("Audit dataset columns for target leakage or deterministic identifiers.")
+            recommendations.append(
+                "Audit dataset columns for target leakage or deterministic identifiers."
+            )
         if not recommendations:
-            recommendations.append("Model demonstrates healthy generalization. Consider testing next candidate architecture or fine-tuning learning rate.")
+            recommendations.append(
+                "Model demonstrates healthy generalization. Consider testing next candidate architecture or fine-tuning learning rate."
+            )
 
         # 5. Format according to Architecture.md Section 21
         structured_findings: dict[str, Any] = {
@@ -73,7 +80,9 @@ class AnalysisService:
             },
             "statistical_observations": {
                 "primary_metric": exp.spec_json.get("evaluation_config", {}).get("primary_metric"),
-                "primary_metric_validation_value": val_metrics.get(exp.spec_json.get("evaluation_config", {}).get("primary_metric", "")),
+                "primary_metric_validation_value": val_metrics.get(
+                    exp.spec_json.get("evaluation_config", {}).get("primary_metric", "")
+                ),
             },
             "error_patterns": {
                 "observed_anomalies": len(leakage["signals"]),
@@ -93,7 +102,9 @@ class AnalysisService:
         }
 
         # 6. Upsert read-only analysis run record
-        analysis_run_stmt = select(AnalysisRunOrm).where(AnalysisRunOrm.experiment_id == experiment_id)
+        analysis_run_stmt = select(AnalysisRunOrm).where(
+            AnalysisRunOrm.experiment_id == experiment_id
+        )
         existing_run = (await self.session.execute(analysis_run_stmt)).scalar_one_or_none()
 
         if not existing_run:
@@ -121,7 +132,10 @@ class AnalysisService:
     async def check_experiment_validity(self, tenant_id: str, experiment_id: str) -> dict[str, Any]:
         """Validate whether an experiment's metrics can be trusted or should be flagged for review."""
         analysis = await self.analyze_experiment(tenant_id, experiment_id)
-        is_valid = not (analysis["leakage_signals"]["leakage_risk_detected"] or analysis["overfitting_signals"]["severity"] == "HIGH")
+        is_valid = not (
+            analysis["leakage_signals"]["leakage_risk_detected"]
+            or analysis["overfitting_signals"]["severity"] == "HIGH"
+        )
         return {
             "experiment_id": experiment_id,
             "is_valid": is_valid,

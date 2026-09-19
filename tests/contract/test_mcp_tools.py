@@ -20,7 +20,9 @@ from ml_mcp.server.context import set_current_principal
 @pytest.fixture(autouse=True)
 async def setup_db():
     db_mgr = get_db_manager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:contract_mcp_db?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:contract_mcp_db?mode=memory&cache=shared&uri=true"
+    )
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -45,7 +47,11 @@ async def setup_db():
 def extract_result(tool_res):
     """Unwrap structured content or JSON text from FastMCP tool result."""
     if tool_res.structured_content is not None:
-        if isinstance(tool_res.structured_content, dict) and "result" in tool_res.structured_content and len(tool_res.structured_content) == 1:
+        if (
+            isinstance(tool_res.structured_content, dict)
+            and "result" in tool_res.structured_content
+            and len(tool_res.structured_content) == 1
+        ):
             return tool_res.structured_content["result"]
         return tool_res.structured_content
     return json.loads(tool_res.content[0].text)
@@ -186,7 +192,9 @@ async def test_experiment_creation_and_listing_tools():
     dataset_version_id = extract_result(reg_res)["version_id"]
 
     # Retrieve a model version ID
-    res_versions = await server.call_tool("list_model_versions", {"model_id": "logistic_regression"})
+    res_versions = await server.call_tool(
+        "list_model_versions", {"model_id": "logistic_regression"}
+    )
     model_version_id = extract_result(res_versions)[0]["version_id"]
 
     # 1. create_experiment
@@ -251,7 +259,10 @@ async def test_mcp_prompts():
     # 1. experiment_design prompt
     design_prompt = await server.render_prompt(
         "experiment_design",
-        {"dataset_description": "Financial fraud detection, 50k rows, 1% fraud rate", "task_type": "binary_classification"},
+        {
+            "dataset_description": "Financial fraud detection, 50k rows, 1% fraud rate",
+            "task_type": "binary_classification",
+        },
     )
     text = design_prompt.messages[0].content.text
     assert "Financial fraud detection" in text
@@ -260,7 +271,10 @@ async def test_mcp_prompts():
     # 2. error_diagnosis prompt
     diag_prompt = await server.render_prompt(
         "error_diagnosis",
-        {"experiment_id": "exp-12345", "problem_summary": "Train ROC-AUC 0.99 but Val ROC-AUC 0.52"},
+        {
+            "experiment_id": "exp-12345",
+            "problem_summary": "Train ROC-AUC 0.99 but Val ROC-AUC 0.52",
+        },
     )
     diag_text = diag_prompt.messages[0].content.text
     assert "exp-12345" in diag_text

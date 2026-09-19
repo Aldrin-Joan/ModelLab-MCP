@@ -45,14 +45,23 @@ class OutboxProcessor:
                 # Mark delivered in outbox table
                 await self.repo.mark_delivered(event.id)
                 delivered_count += 1
-                logger.info("Successfully dispatched outbox event %s for experiment %s", event.id, experiment_id)
+                logger.info(
+                    "Successfully dispatched outbox event %s for experiment %s",
+                    event.id,
+                    experiment_id,
+                )
 
             except Exception as exc:
                 new_retry = event.retry_count + 1
                 logger.error(
                     "Failed to dispatch outbox event %s (attempt %d/%d): %s",
-                    event.id, new_retry, self.max_retries, exc
+                    event.id,
+                    new_retry,
+                    self.max_retries,
+                    exc,
                 )
-                await self.repo.mark_failed(event.id, retry_count=new_retry, max_retries=self.max_retries)
+                await self.repo.mark_failed(
+                    event.id, retry_count=new_retry, max_retries=self.max_retries
+                )
 
         return delivered_count

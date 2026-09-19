@@ -46,6 +46,7 @@ class BaseModelTrainer(ABC):
         task_type: TaskType,
         hyperparameters: dict[str, Any],
         random_seed: int = 42,
+        max_cpu_cores: int | None = None,
     ) -> TrainingResult:
         """Execute model training, evaluate metrics, and package artifacts."""
         pass

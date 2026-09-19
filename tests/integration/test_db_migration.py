@@ -11,7 +11,9 @@ from ml_mcp.infrastructure.postgres.session import DatabaseManager
 @pytest.mark.asyncio
 async def test_database_manager_lifecycle():
     db_mgr = DatabaseManager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:testdb?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:testdb?mode=memory&cache=shared&uri=true"
+    )
 
     # Verify health check succeeds
     is_healthy = await db_mgr.check_health()
@@ -24,7 +26,9 @@ async def test_database_manager_lifecycle():
     # Test transactional session commit
     async with db_mgr.session() as sess:
         await sess.execute(
-            text("INSERT INTO tenants (id, name, created_at, updated_at) VALUES ('t-1', 'Acme Corp', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)")
+            text(
+                "INSERT INTO tenants (id, name, created_at, updated_at) VALUES ('t-1', 'Acme Corp', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            )
         )
 
     # Verify query in new session
@@ -36,7 +40,9 @@ async def test_database_manager_lifecycle():
     with pytest.raises(ValueError):
         async with db_mgr.session() as sess:
             await sess.execute(
-                text("INSERT INTO tenants (id, name, created_at, updated_at) VALUES ('t-2', 'Beta LLC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)")
+                text(
+                    "INSERT INTO tenants (id, name, created_at, updated_at) VALUES ('t-2', 'Beta LLC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                )
             )
             raise ValueError("Intentional abort")
 

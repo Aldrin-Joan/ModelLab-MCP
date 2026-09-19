@@ -2,7 +2,7 @@
 
 import pytest
 
-from ml_mcp.domain.errors import AuthorizationDeniedError
+from ml_mcp.domain.errors import AuthorizationDeniedError, ResourceNotFoundError
 from ml_mcp.domain.policies import (
     TOOL_POLICIES,
     Principal,
@@ -39,15 +39,25 @@ def test_researcher_role_permissions():
     assert researcher.has_permission(Scope.WORKER_OPERATE) is False
 
 
-def test_explicit_token_scope_override():
-    # User is viewer but granted explicit create scope in token
-    scoped_user = Principal(
+def test_scope_attenuation_enforcement():
+    # User is researcher (has create scope) but token is attenuated to only models:read
+    attenuated_researcher = Principal(
         principal_id="user-3",
+        tenant_id="tenant-a",
+        role=Role.RESEARCHER,
+        scopes={Scope.MODELS_READ.value},
+    )
+    assert attenuated_researcher.has_permission(Scope.MODELS_READ) is True
+    assert attenuated_researcher.has_permission(Scope.EXPERIMENTS_CREATE) is False
+
+    # User is viewer, token specifies experiments:create (token cannot exceed role permissions)
+    viewer_escalated = Principal(
+        principal_id="user-3b",
         tenant_id="tenant-a",
         role=Role.VIEWER,
         scopes={Scope.EXPERIMENTS_CREATE.value},
     )
-    assert scoped_user.has_permission(Scope.EXPERIMENTS_CREATE) is True
+    assert viewer_escalated.has_permission(Scope.EXPERIMENTS_CREATE) is False
 
 
 def test_tenant_isolation_enforcement():
@@ -60,14 +70,19 @@ def test_tenant_isolation_enforcement():
     # Same tenant & allowed project succeeds
     validate_tenant_access(user, resource_tenant_id="tenant-alpha", resource_project_id="proj-101")
 
-    # Cross-tenant access fails
-    with pytest.raises(AuthorizationDeniedError) as exc_info:
-        validate_tenant_access(user, resource_tenant_id="tenant-beta", resource_project_id="proj-101")
-    assert "Cross-tenant access forbidden" in str(exc_info.value)
+    # Cross-tenant access fails with ResourceNotFoundError (anti-enumeration: 404)
+    with pytest.raises(ResourceNotFoundError) as exc_info:
+        validate_tenant_access(
+            user, resource_tenant_id="tenant-beta", resource_project_id="proj-101"
+        )
+    assert "not found" in str(exc_info.value).lower()
+    assert "tenant-beta" not in str(exc_info.value)
 
     # Cross-project access in same tenant fails
     with pytest.raises(AuthorizationDeniedError) as exc_info:
-        validate_tenant_access(user, resource_tenant_id="tenant-alpha", resource_project_id="proj-999")
+        validate_tenant_access(
+            user, resource_tenant_id="tenant-alpha", resource_project_id="proj-999"
+        )
     assert "does not have access to project" in str(exc_info.value)
 
 

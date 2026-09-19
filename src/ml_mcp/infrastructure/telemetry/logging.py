@@ -64,7 +64,11 @@ class JSONFormatter(logging.Formatter):
     def _sanitize(self, val: Any) -> Any:
         if isinstance(val, dict):
             return {
-                k: ("***REDACTED***" if any(s in k.lower() for s in self._SENSITIVE_KEYS) else self._sanitize(v))
+                k: (
+                    "***REDACTED***"
+                    if any(s in k.lower() for s in self._SENSITIVE_KEYS)
+                    else self._sanitize(v)
+                )
                 for k, v in val.items()
             }
         if isinstance(val, (list, tuple)):
@@ -88,13 +92,34 @@ class JSONFormatter(logging.Formatter):
 
         # Include custom extra fields attached to the log record
         standard_attrs = {
-            "name", "msg", "args", "levelname", "levelno", "pathname",
-            "filename", "module", "exc_info", "exc_text", "stack_info",
-            "lineno", "funcName", "created", "msecs", "relativeCreated",
-            "thread", "threadName", "processName", "process", "message",
+            "name",
+            "msg",
+            "args",
+            "levelname",
+            "levelno",
+            "pathname",
+            "filename",
+            "module",
+            "exc_info",
+            "exc_text",
+            "stack_info",
+            "lineno",
+            "funcName",
+            "created",
+            "msecs",
+            "relativeCreated",
+            "thread",
+            "threadName",
+            "processName",
+            "process",
+            "message",
         }
         extras = {
-            k: ("***REDACTED***" if any(s in k.lower() for s in self._SENSITIVE_KEYS) else self._sanitize(v))
+            k: (
+                "***REDACTED***"
+                if any(s in k.lower() for s in self._SENSITIVE_KEYS)
+                else self._sanitize(v)
+            )
             for k, v in record.__dict__.items()
             if k not in standard_attrs and not k.startswith("_")
         }
@@ -120,9 +145,9 @@ def configure_logging(level: str = "INFO") -> None:
 
     # Ensure critical third-party loggers do not write raw stdout
     for noisy in ("uvicorn", "uvicorn.access", "uvicorn.error", "fastmcp"):
-        l = logging.getLogger(noisy)
-        l.handlers = []
-        l.propagate = True
+        noisy_logger = logging.getLogger(noisy)
+        noisy_logger.handlers = []
+        noisy_logger.propagate = True
 
 
 def get_logger(name: str) -> logging.Logger:

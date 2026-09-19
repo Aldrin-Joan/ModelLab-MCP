@@ -36,14 +36,27 @@ class TokenValidator:
             raise AuthenticationRequiredError("Malformed JWT header") from exc
 
         alg = unverified_header.get("alg")
-        if not alg or alg.lower() == "none" or alg not in self.settings.auth.algorithms:
-            logger.warning("Rejected token with disallowed algorithm: %s", alg)
+        expected_alg = (
+            "RS256"
+            if self.settings.auth.public_key_pem
+            else (
+                self.settings.auth.algorithms[0]
+                if len(self.settings.auth.algorithms) == 1
+                else "HS256"
+            )
+        )
+        if not alg or alg.lower() == "none" or alg != expected_alg:
+            logger.warning(
+                "Rejected token with algorithm '%s', expected pinned algorithm '%s'",
+                alg,
+                expected_alg,
+            )
             raise AuthenticationRequiredError(f"Token algorithm '{alg}' is not permitted")
 
         # 2. Select verification key
         key: str = (
             self.settings.auth.public_key_pem
-            if alg.startswith("RS") and self.settings.auth.public_key_pem
+            if expected_alg.startswith("RS") and self.settings.auth.public_key_pem
             else self.settings.auth.secret_key.get_secret_value()
         )
 
@@ -52,7 +65,7 @@ class TokenValidator:
             payload: dict[str, Any] = jwt.decode(
                 token,
                 key=key,
-                algorithms=[alg],
+                algorithms=[expected_alg],
                 issuer=self.settings.auth.issuer,
                 audience=self.settings.auth.audience,
                 options={

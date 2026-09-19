@@ -29,7 +29,9 @@ async def handle_list_model_versions(model_id: str, principal: Principal) -> lis
         return await service.list_model_versions(model_id)
 
 
-async def handle_list_datasets(principal: Principal, project_id: str | None = None) -> list[dict[str, Any]]:
+async def handle_list_datasets(
+    principal: Principal, project_id: str | None = None
+) -> list[dict[str, Any]]:
     principal.enforce_permission(Scope.DATASETS_READ)
     async with get_db_manager().session() as sess:
         service = DatasetService(sess)
@@ -43,10 +45,13 @@ async def handle_get_dataset(dataset_id: str, principal: Principal) -> dict[str,
         return await service.get_dataset(principal.tenant_id, dataset_id)
 
 
-async def handle_list_dataset_versions(dataset_id: str, principal: Principal) -> list[dict[str, Any]]:
+async def handle_list_dataset_versions(
+    dataset_id: str, principal: Principal
+) -> list[dict[str, Any]]:
     principal.enforce_permission(Scope.DATASETS_READ)
     async with get_db_manager().session() as sess:
         from ml_mcp.infrastructure.postgres.repositories.datasets import DatasetRepository
+
         repo = DatasetRepository(sess)
         versions = await repo.list_versions(principal.tenant_id, dataset_id)
         return [

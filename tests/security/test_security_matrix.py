@@ -31,7 +31,9 @@ from ml_mcp.server.http import create_http_app
 @pytest.fixture(autouse=True)
 async def setup_db():
     db_mgr = get_db_manager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:sec_matrix_db?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:sec_matrix_db?mode=memory&cache=shared&uri=true"
+    )
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -48,7 +50,11 @@ async def setup_db():
 def extract_result(tool_res):
     """Unwrap structured content or JSON text from FastMCP tool result."""
     if tool_res.structured_content is not None:
-        if isinstance(tool_res.structured_content, dict) and "result" in tool_res.structured_content and len(tool_res.structured_content) == 1:
+        if (
+            isinstance(tool_res.structured_content, dict)
+            and "result" in tool_res.structured_content
+            and len(tool_res.structured_content) == 1
+        ):
             return tool_res.structured_content["result"]
         return tool_res.structured_content
     return json.loads(tool_res.content[0].text)

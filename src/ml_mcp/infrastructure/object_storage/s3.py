@@ -2,6 +2,8 @@
 
 import hashlib
 import logging
+import os
+import re
 from typing import Any
 
 import boto3
@@ -17,11 +19,45 @@ logger = logging.getLogger(__name__)
 class S3StorageService:
     """Production S3 / MinIO storage adapter managing artifacts and datasets."""
 
+    _SAFE_COMPONENT_PATTERN = re.compile(r"^[a-zA-Z0-9_\-\.]+$")
+
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
         self.bucket_name = self.settings.object_store.bucket_name
         self._client: Any = None
         self._memory_store: dict[str, tuple[bytes, dict[str, str], str]] = {}
+
+    @classmethod
+    def _assert_safe_component(cls, component: str, field_name: str = "component") -> str:
+        """Validate that a path component contains no traversal sequences or unsafe characters."""
+        if not component or not isinstance(component, str) or not component.strip():
+            raise ValueError(f"Invalid {field_name}: empty component")
+        if component in (".", "..") or ".." in component or "/" in component or "\\" in component:
+            raise ValueError(f"Directory traversal detected in {field_name}: '{component}'")
+        if not cls._SAFE_COMPONENT_PATTERN.match(component):
+            raise ValueError(f"Invalid characters detected in {field_name}: '{component}'")
+        return component
+
+    @classmethod
+    def _assert_safe_key(cls, key: str) -> str:
+        """Validate full storage key against path traversal and malformed structures."""
+        if not key or not isinstance(key, str) or not key.strip():
+            raise ValueError("Invalid storage key: empty key")
+        if key.startswith("/") or key.endswith("/"):
+            raise ValueError(f"Invalid storage key: leading or trailing slash in '{key}'")
+        if "//" in key or "\\" in key or ".." in key:
+            raise ValueError(f"Directory traversal detected in storage key: '{key}'")
+        parts = key.split("/")
+        for part in parts:
+            cls._assert_safe_component(part, "key component")
+        return key
+
+    @property
+    def is_testing(self) -> bool:
+        app_env = getattr(self.settings, "app_env", None)
+        if app_env is None and hasattr(self.settings, "app"):
+            app_env = getattr(self.settings.app, "env", None)
+        return app_env == "testing" or os.environ.get("APP_ENV") == "testing"
 
     @property
     def client(self) -> Any:
@@ -32,7 +68,12 @@ class S3StorageService:
                 aws_access_key_id=self.settings.object_store.access_key_id.get_secret_value(),
                 aws_secret_access_key=self.settings.object_store.secret_access_key.get_secret_value(),
                 region_name=self.settings.object_store.region,
-                config=Config(signature_version="s3v4", s3={"addressing_style": "path"}, connect_timeout=1, read_timeout=1),
+                config=Config(
+                    signature_version="s3v4",
+                    s3={"addressing_style": "path"},
+                    connect_timeout=1,
+                    read_timeout=1,
+                ),
             )
         return self._client
 
@@ -42,16 +83,34 @@ class S3StorageService:
         return hashlib.sha256(data).hexdigest()
 
     # Tenant-isolated path generators
-    @staticmethod
-    def get_dataset_key(tenant_id: str, dataset_id: str, version: str, filename: str = "data.parquet") -> str:
+    @classmethod
+    def get_dataset_key(
+        cls, tenant_id: str, dataset_id: str, version: str, filename: str = "data.parquet"
+    ) -> str:
+        cls._assert_safe_component(tenant_id, "tenant_id")
+        cls._assert_safe_component(dataset_id, "dataset_id")
+        cls._assert_safe_component(version, "version")
+        cls._assert_safe_component(filename, "filename")
         return f"tenants/{tenant_id}/datasets/{dataset_id}/{version}/{filename}"
 
-    @staticmethod
-    def get_experiment_artifact_key(tenant_id: str, experiment_id: str, artifact_type: str, filename: str) -> str:
+    @classmethod
+    def get_experiment_artifact_key(
+        cls, tenant_id: str, experiment_id: str, artifact_type: str, filename: str
+    ) -> str:
+        cls._assert_safe_component(tenant_id, "tenant_id")
+        cls._assert_safe_component(experiment_id, "experiment_id")
+        cls._assert_safe_component(artifact_type, "artifact_type")
+        cls._assert_safe_component(filename, "filename")
         return f"tenants/{tenant_id}/experiments/{experiment_id}/{artifact_type}/{filename}"
 
-    @staticmethod
-    def get_model_key(tenant_id: str, model_id: str, version: str, filename: str = "model.joblib") -> str:
+    @classmethod
+    def get_model_key(
+        cls, tenant_id: str, model_id: str, version: str, filename: str = "model.joblib"
+    ) -> str:
+        cls._assert_safe_component(tenant_id, "tenant_id")
+        cls._assert_safe_component(model_id, "model_id")
+        cls._assert_safe_component(version, "version")
+        cls._assert_safe_component(filename, "filename")
         return f"tenants/{tenant_id}/models/{model_id}/{version}/{filename}"
 
     def put_object(
@@ -62,9 +121,20 @@ class S3StorageService:
         metadata: dict[str, str] | None = None,
     ) -> tuple[str, str]:
         """Upload an immutable object. Returns (storage_uri, sha256_digest)."""
+        self._assert_safe_key(key)
         content_hash = self.compute_sha256(data)
         meta = metadata or {}
         meta["content_hash"] = content_hash
+
+        if self.is_testing and self._client is None:
+            self._memory_store[key] = (data, meta, content_type)
+            storage_uri = f"s3://{self.bucket_name}/{key}"
+            logger.info(
+                "Testing environment: stored S3 object in memory: %s (size: %d bytes)",
+                storage_uri,
+                len(data),
+            )
+            return storage_uri, content_hash
 
         try:
             self.client.put_object(
@@ -78,15 +148,23 @@ class S3StorageService:
             logger.info("Successfully wrote S3 object: %s (size: %d bytes)", storage_uri, len(data))
             return storage_uri, content_hash
         except Exception as exc:
-            logger.warning("Live S3 unavailable (%s), writing object to memory fallback for key '%s'", exc, key)
+            if not self.is_testing:
+                raise DependencyUnavailableError("Object Storage") from exc
+            logger.warning(
+                "Live S3 unavailable (%s), writing object to memory fallback for key '%s'", exc, key
+            )
             self._memory_store[key] = (data, meta, content_type)
             storage_uri = f"s3://{self.bucket_name}/{key}"
             return storage_uri, content_hash
 
     def get_object(self, key: str) -> bytes:
         """Retrieve binary content of an object."""
+        self._assert_safe_key(key)
         if key in self._memory_store:
             return self._memory_store[key][0]
+        if self.is_testing and self._client is None:
+            logger.error("Failed to read object from S3 memory store at key '%s'", key)
+            raise DependencyUnavailableError("Object Storage")
         try:
             response = self.client.get_object(Bucket=self.bucket_name, Key=key)
             return response["Body"].read()
@@ -98,6 +176,7 @@ class S3StorageService:
 
     def head_object(self, key: str) -> dict[str, Any] | None:
         """Inspect object metadata without downloading full payload."""
+        self._assert_safe_key(key)
         if key in self._memory_store:
             data, meta, c_type = self._memory_store[key]
             return {
@@ -106,6 +185,8 @@ class S3StorageService:
                 "metadata": meta,
                 "last_modified": None,
             }
+        if self.is_testing and self._client is None:
+            return None
         try:
             response = self.client.head_object(Bucket=self.bucket_name, Key=key)
             return {
@@ -131,7 +212,10 @@ class S3StorageService:
 
     def delete_object(self, key: str) -> bool:
         """Delete an object."""
+        self._assert_safe_key(key)
         self._memory_store.pop(key, None)
+        if self.is_testing and self._client is None:
+            return True
         try:
             self.client.delete_object(Bucket=self.bucket_name, Key=key)
             return True
@@ -141,7 +225,10 @@ class S3StorageService:
 
     def generate_presigned_get_url(self, key: str, expires_in: int | None = None) -> str:
         """Generate a short-lived read-only presigned GET URL."""
+        self._assert_safe_key(key)
         ttl = expires_in or self.settings.object_store.presigned_ttl_seconds
+        if self.is_testing and self._client is None:
+            return f"https://s3.local/{self.bucket_name}/{key}?expires={ttl}&sig=mock"
         try:
             url = self.client.generate_presigned_url(
                 ClientMethod="get_object",
@@ -159,7 +246,10 @@ class S3StorageService:
         expires_in: int | None = None,
     ) -> str:
         """Generate a short-lived presigned PUT URL for direct client uploads."""
+        self._assert_safe_key(key)
         ttl = expires_in or self.settings.object_store.presigned_ttl_seconds
+        if self.is_testing and self._client is None:
+            return f"https://s3.local/{self.bucket_name}/{key}?expires={ttl}&sig=mock"
         try:
             url = self.client.generate_presigned_url(
                 ClientMethod="put_object",

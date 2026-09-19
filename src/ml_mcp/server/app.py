@@ -7,11 +7,10 @@ into a production-grade FastMCP 4 server instance.
 import contextlib
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Any, TypeVar
+from typing import Any
 
 from fastmcp import FastMCP
 
-from ml_mcp.config import get_settings
 from ml_mcp.mcp.prompts import error_diagnosis_prompt, experiment_design_prompt
 from ml_mcp.mcp.resources import (
     read_experiment_metrics_resource,
@@ -54,10 +53,8 @@ from ml_mcp.server.middleware import get_security_pipeline
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
 
-
-async def _execute_secured(
+async def _execute_secured[T](
     tool_name: str,
     fn: Callable[..., Awaitable[T]],
     *args: Any,
@@ -102,8 +99,6 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[None]:
 
 def create_server(name: str = "ModelLab") -> FastMCP:
     """Construct and configure the FastMCP server instance with tools, resources, and prompts."""
-    settings = get_settings()
-
     server = FastMCP(
         name=name,
         instructions=(
@@ -159,7 +154,9 @@ def create_server(name: str = "ModelLab") -> FastMCP:
         description="List immutable versions for a specific dataset.",
     )
     async def list_dataset_versions(dataset_id: str) -> list[dict[str, Any]]:
-        return await _execute_secured("list_dataset_versions", handle_list_dataset_versions, dataset_id)
+        return await _execute_secured(
+            "list_dataset_versions", handle_list_dataset_versions, dataset_id
+        )
 
     # -------------------------------------------------------------------------
     # 2. Dataset Management & Validation Tools
@@ -296,7 +293,9 @@ def create_server(name: str = "ModelLab") -> FastMCP:
         description="Retrieve all computed evaluation metrics across train/validation splits.",
     )
     async def get_experiment_metrics(experiment_id: str) -> dict[str, Any]:
-        return await _execute_secured("get_experiment_metrics", handle_get_experiment_metrics, experiment_id)
+        return await _execute_secured(
+            "get_experiment_metrics", handle_get_experiment_metrics, experiment_id
+        )
 
     @server.tool(
         name="get_experiment_predictions",
@@ -315,21 +314,27 @@ def create_server(name: str = "ModelLab") -> FastMCP:
         description="List all persisted artifacts (model weights, preprocessor, metrics) for an experiment.",
     )
     async def list_experiment_artifacts(experiment_id: str) -> list[dict[str, Any]]:
-        return await _execute_secured("list_experiment_artifacts", handle_list_experiment_artifacts, experiment_id)
+        return await _execute_secured(
+            "list_experiment_artifacts", handle_list_experiment_artifacts, experiment_id
+        )
 
     @server.tool(
         name="read_experiment_artifact",
         description="Get artifact metadata and presigned download URL.",
     )
     async def read_experiment_artifact(artifact_id: str) -> dict[str, Any]:
-        return await _execute_secured("read_experiment_artifact", handle_read_experiment_artifact, artifact_id)
+        return await _execute_secured(
+            "read_experiment_artifact", handle_read_experiment_artifact, artifact_id
+        )
 
     @server.tool(
         name="compare_experiments",
         description="Compare hyperparameters and performance metrics across multiple experiments.",
     )
     async def compare_experiments(experiment_ids: list[str]) -> dict[str, Any]:
-        return await _execute_secured("compare_experiments", handle_compare_experiments, experiment_ids)
+        return await _execute_secured(
+            "compare_experiments", handle_compare_experiments, experiment_ids
+        )
 
     # -------------------------------------------------------------------------
     # 5. Diagnostic Analysis Tools
@@ -340,21 +345,27 @@ def create_server(name: str = "ModelLab") -> FastMCP:
         description="Run automated diagnostic checks for overfitting, data leakage, and training health.",
     )
     async def analyze_experiment(experiment_id: str) -> dict[str, Any]:
-        return await _execute_secured("analyze_experiment", handle_analyze_experiment, experiment_id)
+        return await _execute_secured(
+            "analyze_experiment", handle_analyze_experiment, experiment_id
+        )
 
     @server.tool(
         name="analyze_model_errors",
         description="Perform deep error slice analysis (residuals, false positives/negatives, error patterns).",
     )
     async def analyze_model_errors(experiment_id: str) -> dict[str, Any]:
-        return await _execute_secured("analyze_model_errors", handle_analyze_model_errors, experiment_id)
+        return await _execute_secured(
+            "analyze_model_errors", handle_analyze_model_errors, experiment_id
+        )
 
     @server.tool(
         name="check_experiment_validity",
         description="Perform automated verification of experiment reproducibility, hashes, and validity.",
     )
     async def check_experiment_validity(experiment_id: str) -> dict[str, Any]:
-        return await _execute_secured("check_experiment_validity", handle_check_experiment_validity, experiment_id)
+        return await _execute_secured(
+            "check_experiment_validity", handle_check_experiment_validity, experiment_id
+        )
 
     # -------------------------------------------------------------------------
     # MCP Resources

@@ -33,12 +33,20 @@ class DomainError(Exception):
 
 
 class AuthenticationRequiredError(DomainError):
-    def __init__(self, message: str = "Authentication required to perform this action", details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        message: str = "Authentication required to perform this action",
+        details: dict[str, Any] | None = None,
+    ) -> None:
         super().__init__(ErrorCode.AUTHENTICATION_REQUIRED, message, details, status_code=401)
 
 
 class AuthorizationDeniedError(DomainError):
-    def __init__(self, message: str = "Access denied for the requested resource", details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        message: str = "Access denied for the requested resource",
+        details: dict[str, Any] | None = None,
+    ) -> None:
         super().__init__(ErrorCode.AUTHORIZATION_DENIED, message, details, status_code=403)
 
 

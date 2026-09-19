@@ -13,7 +13,9 @@ from ml_mcp.server.http import create_http_app
 @pytest.fixture(autouse=True)
 async def setup_db():
     db_mgr = get_db_manager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:transport_db?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:transport_db?mode=memory&cache=shared&uri=true"
+    )
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -93,5 +95,6 @@ def test_protected_endpoint_accepts_valid_token():
 def test_stdio_launcher_import():
     """Verify STDIO launcher is importable and has entrypoint."""
     from ml_mcp.server.stdio import run_stdio, run_stdio_server
+
     assert callable(run_stdio)
     assert callable(run_stdio_server)

@@ -39,8 +39,12 @@ class SplitStrategy(BaseModel):
     """Configuration for splitting dataset into training and evaluation partitions."""
 
     strategy: SplitStrategyType = SplitStrategyType.TRAIN_TEST_SPLIT
-    test_size: float = Field(default=0.2, ge=0.05, le=0.5, description="Fraction of data reserved for testing")
-    n_splits: int = Field(default=5, ge=2, le=20, description="Folds for cross-validation strategies")
+    test_size: float = Field(
+        default=0.2, ge=0.05, le=0.5, description="Fraction of data reserved for testing"
+    )
+    n_splits: int = Field(
+        default=5, ge=2, le=20, description="Folds for cross-validation strategies"
+    )
     shuffle: bool = True
     random_seed: int = Field(default=42, ge=0)
 
@@ -97,17 +101,31 @@ class ExperimentSpec(BaseModel):
     @model_validator(mode="after")
     def validate_metrics_compatible_with_task(self) -> "ExperimentSpec":
         classification_metrics = {
-            "accuracy", "f1", "f1_macro", "f1_weighted", "precision", "recall",
-            "roc_auc", "pr_auc", "log_loss", "brier_score"
+            "accuracy",
+            "f1",
+            "f1_macro",
+            "f1_weighted",
+            "precision",
+            "recall",
+            "roc_auc",
+            "pr_auc",
+            "log_loss",
+            "brier_score",
         }
         regression_metrics = {"mse", "rmse", "mae", "r2", "mape", "explained_variance"}
 
         pm = self.evaluation_config.primary_metric.lower()
-        if self.task_type in (TaskType.BINARY_CLASSIFICATION, TaskType.MULTICLASS_CLASSIFICATION):
-            if pm in regression_metrics and pm not in classification_metrics:
-                raise ValueError(f"Metric '{pm}' is not compatible with classification task")
-        elif self.task_type == TaskType.REGRESSION:
-            if pm in classification_metrics and pm not in regression_metrics:
-                raise ValueError(f"Metric '{pm}' is not compatible with regression task")
+        if (
+            self.task_type in (TaskType.BINARY_CLASSIFICATION, TaskType.MULTICLASS_CLASSIFICATION)
+            and pm in regression_metrics
+            and pm not in classification_metrics
+        ):
+            raise ValueError(f"Metric '{pm}' is not compatible with classification task")
+        if (
+            self.task_type == TaskType.REGRESSION
+            and pm in classification_metrics
+            and pm not in regression_metrics
+        ):
+            raise ValueError(f"Metric '{pm}' is not compatible with regression task")
 
         return self

@@ -97,12 +97,28 @@ A production-grade, secure, reproducible machine learning experimentation contro
 - [ ] E2E lifecycle test passes with real ML training and analysis
 
 ### Phase 10: Containerization, CI/CD & Deployment Artifacts
-- [ ] Task 10.1: Multi-Stage Production Dockerfiles (`ml-mcp-api` & `ml-worker-tabular-cpu`)
-- [ ] Task 10.2: GitHub Actions CI Pipeline & Operational Documentation (`.github/workflows/ci.yml`, `Docs/Operational-Guide.md`)
+- [x] Task 10.1: Multi-Stage Production Dockerfiles (`ml-mcp-api` & `ml-worker-tabular-cpu`)
+- [x] Task 10.2: GitHub Actions CI Pipeline & Operational Documentation (`.github/workflows/ci.yml`, `Docs/Operational-Guide.md`)
 
-### Checkpoint 10: Production Readiness Complete
-- [ ] Docker images build clean, non-root, hardened
-- [ ] CI pipeline validates formatting, linting, typing, tests
+### Checkpoint 10: Production Readiness Baseline Complete
+- [x] Docker images build clean, non-root, hardened
+- [x] CI pipeline validates formatting, linting, typing, tests
+- [x] Initial 75 tests passing green
+
+### Phase 11: Production Remediation (CRIT & REQ Fixes)
+- [x] Task 11.1: Worker Consumer Daemon & Non-Blocking Execution (CRIT-01, REQ-06)
+- [x] Task 11.2: Storage Hardening: Private S3 Bucket & Path Traversal Sanitization (CRIT-02, REQ-03)
+- [x] Task 11.3: Application Layer Extraction & Model Approval Enforcement (CRIT-03, CRIT-04, REQ-05)
+- [x] Task 11.4: OAuth 2.1 Scope Attenuation & JWT Algorithm Pinning (REQ-01, REQ-02)
+- [x] Task 11.5: Anti-Enumeration & Atomic Rate Limiter (REQ-04, REQ-07)
+- [x] Task 11.6: Test Suite Hermeticity, Conftest & Negative Tests (QA Audit)
+- [x] Task 11.7: Code Hygiene & Full Verification (`ruff` clean & 100% green test suite)
+
+### Checkpoint 11: Full Production Certification
+- [x] All 3 Critical and 7 Required issues remediated
+- [x] Centralized tests/conftest.py prevents all state leakage
+- [x] Ruff reports 0 errors and 0 formatting issues
+- [x] 100% test pass rate on full regression suite
 
 ## Risks and Mitigations
 | Risk | Impact | Mitigation |
@@ -111,6 +127,9 @@ A production-grade, secure, reproducible machine learning experimentation contro
 | Data Leakage during Preprocessing | High | Strict leak-free pipeline where transforms are fit exclusively on train splits; automated leakage checks in analysis engine. |
 | STDIO Stream Contamination | High | Strict logging configuration directing all output, traces, and diagnostics to `sys.stderr`. |
 | Cross-Tenant Data Access | Critical | Repository-level tenant scoping, JWT claim binding, and automated security test matrix. |
+| JWT Algorithm Confusion | Critical | Pin expected algorithm strictly in server settings, rejecting unverified header algorithm switches. |
+| Test State Pollution | Medium | Autouse reset fixtures in centralized `tests/conftest.py` clearing memory stores and DB tables. |
 
 ## Open Questions
-- None currently blocking; all architectural specifications in `Docs/Tech-Stack.md` and `Docs/Architecture.md` are aligned.
+- None currently blocking; all remediation requirements have concrete technical specifications.
+

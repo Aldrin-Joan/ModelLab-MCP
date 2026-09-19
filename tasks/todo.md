@@ -143,3 +143,33 @@
 - [x] Production Docker containers defined and validated
 - [x] CI pipeline ready for deployment
 - [x] 75 of 75 tests passing green across entire repo
+
+## Phase 11: Production Remediation (CRIT & REQ Fixes)
+- [x] **Task 11.1**: Worker Consumer Daemon & Non-Blocking Execution (CRIT-01, REQ-06)
+  - Files: `src/ml_mcp/workers/daemon.py`, `src/ml_mcp/workers/runner.py`, `Dockerfile`
+  - Verification: `pytest tests/integration/test_worker_runner.py` & daemon loop verification
+- [x] **Task 11.2**: Storage Hardening: Private S3 Bucket & Path Traversal Sanitization (CRIT-02, REQ-03)
+  - Files: `docker-compose.yml`, `src/ml_mcp/infrastructure/object_storage/s3.py`, `src/ml_mcp/server/http.py`
+  - Verification: `pytest tests/unit/test_object_storage.py` & traversal attack test
+- [x] **Task 11.3**: Application Layer Extraction & Model Approval Enforcement (CRIT-03, CRIT-04, REQ-05)
+  - Files: `src/ml_mcp/application/experiments/service.py`, `src/ml_mcp/application/artifacts/service.py`, `src/ml_mcp/mcp/tools/experiments.py`, `src/ml_mcp/mcp/tools/results.py`, `src/ml_mcp/infrastructure/postgres/repositories/experiments.py`
+  - Verification: `pytest tests/contract/test_mcp_tools.py tests/unit/test_model_service.py`
+- [x] **Task 11.4**: OAuth 2.1 Scope Attenuation & JWT Algorithm Pinning (REQ-01, REQ-02)
+  - Files: `src/ml_mcp/domain/policies/rbac.py`, `src/ml_mcp/server/auth.py`, `src/ml_mcp/server/context.py`
+  - Verification: `pytest tests/security/test_security_matrix.py tests/unit/test_auth.py`
+- [x] **Task 11.5**: Anti-Enumeration & Atomic Rate Limiter (REQ-04, REQ-07)
+  - Files: `src/ml_mcp/domain/policies/tenant_isolation.py`, `src/ml_mcp/mcp/tools/results.py`, `src/ml_mcp/infrastructure/redis/rate_limiter.py`
+  - Verification: `pytest tests/security/test_security_matrix.py tests/integration/test_rate_limiter.py`
+- [x] **Task 11.6**: Test Suite Hermeticity, Conftest & Negative Tests (QA Audit)
+  - Files: `tests/conftest.py`, `tests/unit/test_dataset_negative.py`, `tests/unit/test_dataset_service.py`
+  - Verification: `pytest tests/`
+- [x] **Task 11.7**: Code Hygiene & Full Verification
+  - Files: Entire repository
+  - Verification: `ruff check src/ tests/`, `ruff format --check src/ tests/`, `pytest tests/`
+
+### Checkpoint 11: Production Certification Complete
+- [x] All 3 Critical and 7 Required findings remediated
+- [x] Centralized tests/conftest.py prevents all state leakage
+- [x] Ruff reports 0 errors and 0 formatting issues
+- [x] 100% test pass rate on full regression suite
+

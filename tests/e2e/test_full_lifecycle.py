@@ -27,7 +27,11 @@ from ml_mcp.workers.runner import WorkerRunner
 def extract_result(tool_res):
     """Unwrap structured content or JSON text from FastMCP tool result."""
     if tool_res.structured_content is not None:
-        if isinstance(tool_res.structured_content, dict) and "result" in tool_res.structured_content and len(tool_res.structured_content) == 1:
+        if (
+            isinstance(tool_res.structured_content, dict)
+            and "result" in tool_res.structured_content
+            and len(tool_res.structured_content) == 1
+        ):
             return tool_res.structured_content["result"]
         return tool_res.structured_content
     return json.loads(tool_res.content[0].text)
@@ -36,7 +40,9 @@ def extract_result(tool_res):
 @pytest.fixture
 async def e2e_env():
     db_mgr = get_db_manager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:e2e_db?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:e2e_db?mode=memory&cache=shared&uri=true"
+    )
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -192,7 +198,9 @@ async def test_full_ml_experiment_lifecycle_e2e(e2e_env: dict):
     assert "val_roc_auc" in metrics or "train_roc_auc" in metrics or len(metrics) > 0
 
     # 2. Predictions
-    preds_res = await server.call_tool("get_experiment_predictions", {"experiment_id": exp1_id, "limit": 10})
+    preds_res = await server.call_tool(
+        "get_experiment_predictions", {"experiment_id": exp1_id, "limit": 10}
+    )
     assert not preds_res.is_error
     pred_data = extract_result(preds_res)
     assert "sample_preview" in pred_data
@@ -212,7 +220,9 @@ async def test_full_ml_experiment_lifecycle_e2e(e2e_env: dict):
 
     # Read specific artifact
     model_art = next(a for a in artifacts if a["artifact_type"] == "model")
-    read_art_res = await server.call_tool("read_experiment_artifact", {"artifact_id": model_art["artifact_id"]})
+    read_art_res = await server.call_tool(
+        "read_experiment_artifact", {"artifact_id": model_art["artifact_id"]}
+    )
     assert not read_art_res.is_error
     art_data = extract_result(read_art_res)
     assert art_data["download_url"] is not None

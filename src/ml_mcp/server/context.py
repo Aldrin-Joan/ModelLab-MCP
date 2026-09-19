@@ -9,7 +9,9 @@ from ml_mcp.server.middleware import LOCAL_STDIO_PRINCIPAL
 
 logger = logging.getLogger(__name__)
 
-_current_principal_var: ContextVar[Principal | None] = ContextVar("current_principal_var", default=None)
+_current_principal_var: ContextVar[Principal | None] = ContextVar(
+    "current_principal_var", default=None
+)
 
 
 def set_current_principal(principal: Principal | None) -> None:
@@ -32,6 +34,7 @@ def get_current_principal() -> Principal:
     # Check for active HTTP request in FastMCP context
     try:
         from fastmcp.server.dependencies import get_http_request
+
         req = get_http_request()
     except RuntimeError:
         req = None
@@ -40,12 +43,16 @@ def get_current_principal() -> Principal:
         auth_header = req.headers.get("Authorization") or req.headers.get("authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             from ml_mcp.config import get_settings
+
             if not get_settings().auth.enabled:
                 return LOCAL_STDIO_PRINCIPAL
-            raise AuthenticationRequiredError("Missing or invalid Bearer token in Authorization header")
+            raise AuthenticationRequiredError(
+                "Missing or invalid Bearer token in Authorization header"
+            )
 
         token = auth_header.split(" ", 1)[1].strip()
         from ml_mcp.server.auth import get_token_validator
+
         validator = get_token_validator()
         return validator.validate_token(token)
 

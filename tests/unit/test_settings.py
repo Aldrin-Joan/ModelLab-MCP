@@ -17,11 +17,14 @@ def test_default_settings():
 
 
 def test_env_override():
-    with patch.dict(os.environ, {
-        "APP_NAME": "custom-mcp",
-        "MCP_PORT": "9000",
-        "RATE_LIMIT_READ_PER_MINUTE": "300",
-    }):
+    with patch.dict(
+        os.environ,
+        {
+            "APP_NAME": "custom-mcp",
+            "MCP_PORT": "9000",
+            "RATE_LIMIT_READ_PER_MINUTE": "300",
+        },
+    ):
         # Direct instantiation reads updated env
         settings = Settings()
         assert settings.app.name == "custom-mcp"

@@ -1,7 +1,7 @@
 """Tenant isolation and project boundary enforcement."""
 
-from ml_mcp.domain.errors import AuthorizationDeniedError
-from ml_mcp.domain.policies.rbac import Principal, Role
+from ml_mcp.domain.errors import AuthorizationDeniedError, ResourceNotFoundError
+from ml_mcp.domain.policies.rbac import Principal
 
 
 def validate_tenant_access(
@@ -12,28 +12,23 @@ def validate_tenant_access(
     """Validate that the authenticated principal is authorized to access resources belonging to a given tenant and project.
 
     Raises:
-        AuthorizationDeniedError: if cross-tenant or unauthorized cross-project access is detected.
+        ResourceNotFoundError: if cross-tenant access is detected (anti-enumeration: 404 with 0 foreign tenant leaks).
+        AuthorizationDeniedError: if unauthorized cross-project access within the same tenant is detected.
     """
-    if principal.role == Role.ADMIN:
-        return
-
-    # Tenant boundary enforcement: strictly forbidden to touch another tenant's data
+    # Tenant boundary enforcement: cross-tenant access returns 404 with zero foreign tenant leakage
     if principal.tenant_id != resource_tenant_id:
-        raise AuthorizationDeniedError(
-            f"Cross-tenant access forbidden: principal belongs to '{principal.tenant_id}', resource belongs to '{resource_tenant_id}'",
-            details={
-                "principal_tenant": principal.tenant_id,
-                "resource_tenant": resource_tenant_id,
-            },
-        )
+        raise ResourceNotFoundError("Resource", resource_project_id or "requested")
 
     # Project boundary enforcement: if principal has restricted project_ids, check membership
-    if resource_project_id is not None and principal.project_ids:
-        if resource_project_id not in principal.project_ids:
-            raise AuthorizationDeniedError(
-                f"Principal '{principal.principal_id}' does not have access to project '{resource_project_id}'",
-                details={
-                    "allowed_projects": principal.project_ids,
-                    "requested_project": resource_project_id,
-                },
-            )
+    if (
+        resource_project_id is not None
+        and principal.project_ids
+        and resource_project_id not in principal.project_ids
+    ):
+        raise AuthorizationDeniedError(
+            f"Principal '{principal.principal_id}' does not have access to project '{resource_project_id}'",
+            details={
+                "allowed_projects": principal.project_ids,
+                "requested_project": resource_project_id,
+            },
+        )

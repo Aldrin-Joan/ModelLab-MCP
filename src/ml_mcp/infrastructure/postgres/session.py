@@ -38,15 +38,18 @@ class DatabaseManager:
         # SQLite requires StaticPool for in-memory and does not support pool_size or max_overflow
         if db_url.startswith("sqlite"):
             from sqlalchemy.pool import StaticPool
+
             engine_kwargs["poolclass"] = StaticPool
             engine_kwargs["connect_args"] = {"check_same_thread": False}
         else:
-            engine_kwargs.update({
-                "pool_size": self.settings.database.pool_size,
-                "max_overflow": self.settings.database.max_overflow,
-                "pool_timeout": self.settings.database.pool_timeout,
-                "pool_recycle": self.settings.database.pool_recycle,
-            })
+            engine_kwargs.update(
+                {
+                    "pool_size": self.settings.database.pool_size,
+                    "max_overflow": self.settings.database.max_overflow,
+                    "pool_timeout": self.settings.database.pool_timeout,
+                    "pool_recycle": self.settings.database.pool_recycle,
+                }
+            )
 
         self._engine = create_async_engine(db_url, **engine_kwargs)
         self._sessionmaker = async_sessionmaker(
@@ -55,7 +58,9 @@ class DatabaseManager:
             expire_on_commit=False,
             autoflush=False,
         )
-        logger.info("Database engine initialized for %s", db_url.split("@")[-1] if "@" in db_url else db_url)
+        logger.info(
+            "Database engine initialized for %s", db_url.split("@")[-1] if "@" in db_url else db_url
+        )
 
     @property
     def engine(self) -> AsyncEngine:

@@ -15,9 +15,7 @@ class ModelRepository:
 
     async def get_by_id(self, model_id: str) -> ModelOrm | None:
         stmt = (
-            select(ModelOrm)
-            .where(ModelOrm.id == model_id)
-            .options(selectinload(ModelOrm.versions))
+            select(ModelOrm).where(ModelOrm.id == model_id).options(selectinload(ModelOrm.versions))
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -28,9 +26,17 @@ class ModelRepository:
         return list(result.scalars().all())
 
     async def get_version(self, model_id: str, version: str) -> ModelVersionOrm | None:
+        stmt = select(ModelVersionOrm).where(
+            ModelVersionOrm.model_id == model_id, ModelVersionOrm.version == version
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_version_by_id(self, version_id: str) -> ModelVersionOrm | None:
         stmt = (
             select(ModelVersionOrm)
-            .where(ModelVersionOrm.model_id == model_id, ModelVersionOrm.version == version)
+            .where(ModelVersionOrm.id == version_id)
+            .options(selectinload(ModelVersionOrm.model))
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()

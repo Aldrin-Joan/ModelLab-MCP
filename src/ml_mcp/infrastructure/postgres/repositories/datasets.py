@@ -27,11 +27,15 @@ class DatasetRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_datasets(self, tenant_id: str, project_id: str | None = None) -> list[DatasetOrm]:
+    async def list_datasets(
+        self, tenant_id: str, project_id: str | None = None
+    ) -> list[DatasetOrm]:
         stmt = select(DatasetOrm).where(DatasetOrm.tenant_id == tenant_id)
         if project_id:
             stmt = stmt.where(DatasetOrm.project_id == project_id)
-        stmt = stmt.options(selectinload(DatasetOrm.versions)).order_by(DatasetOrm.created_at.desc())
+        stmt = stmt.options(selectinload(DatasetOrm.versions)).order_by(
+            DatasetOrm.created_at.desc()
+        )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
@@ -40,7 +44,9 @@ class DatasetRepository:
         await self.session.flush()
         return version
 
-    async def get_version(self, tenant_id: str, dataset_id: str, version: str) -> DatasetVersionOrm | None:
+    async def get_version(
+        self, tenant_id: str, dataset_id: str, version: str
+    ) -> DatasetVersionOrm | None:
         stmt = (
             select(DatasetVersionOrm)
             .join(DatasetOrm, DatasetVersionOrm.dataset_id == DatasetOrm.id)

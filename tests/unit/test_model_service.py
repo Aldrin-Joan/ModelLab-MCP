@@ -10,7 +10,9 @@ from ml_mcp.infrastructure.postgres.session import DatabaseManager
 @pytest.fixture
 async def db():
     db_mgr = DatabaseManager()
-    db_mgr.initialize(custom_url="sqlite+aiosqlite:///file:modeldb?mode=memory&cache=shared&uri=true")
+    db_mgr.initialize(
+        custom_url="sqlite+aiosqlite:///file:modeldb?mode=memory&cache=shared&uri=true"
+    )
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield db_mgr
