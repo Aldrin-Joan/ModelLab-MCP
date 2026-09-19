@@ -81,7 +81,7 @@ services:
       context: .
       target: ml-mcp-api
     container_name: modellab-db-migrate
-    command: ["alembic", "upgrade", "head"]
+    entrypoint: ["alembic", "upgrade", "head"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,7 +97,7 @@ services:
     restart: unless-stopped
     stdin_open: true
     tty: true
-    command: ["python", "-m", "ml_mcp.server.stdio"]
+    entrypoint: ["python", "-m", "ml_mcp.server.stdio"]
     depends_on:
       postgres:
         condition: service_healthy

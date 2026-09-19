@@ -6,9 +6,12 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: Build & Dependency Resolution
+# Stage 1: Build & Dependency Resolution (Powered by Astral uv)
 # -----------------------------------------------------------------------------
 FROM python:3.13-slim-bookworm AS builder
+
+# Grab uv binary from official Astral image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 WORKDIR /build
 
@@ -19,13 +22,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python -m venv /opt/venv
+# Create virtual environment
+RUN uv venv /opt/venv
+ENV VIRTUAL_ENV="/opt/venv"
 ENV PATH="/opt/venv/bin:$PATH"
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 
+# Step 1: Install dependencies first (heavily cached by Docker)
 COPY pyproject.toml README.md ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install -r pyproject.toml
+
+# Step 2: Copy source code and install application without reinstalling dependencies
 COPY src/ ./src/
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir .
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --no-deps .
 
 # -----------------------------------------------------------------------------
 # Stage 2: ml-mcp-api (FastMCP 4 Control Plane Server)
