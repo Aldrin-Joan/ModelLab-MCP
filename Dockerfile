@@ -75,7 +75,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health/live || exit 1
 
-ENTRYPOINT ["/opt/venv/bin/python", "-m", "ml_mcp.server.http"]
+ENTRYPOINT ["/opt/venv/bin/python"]
+CMD ["-m", "ml_mcp.server.http"]
 
 # -----------------------------------------------------------------------------
 # Stage 3: ml-worker-tabular-cpu (ML Training Execution Worker)
@@ -104,4 +105,5 @@ RUN groupadd -g 10002 workergroup && \
 
 USER 10002:10002
 
-ENTRYPOINT ["/opt/venv/bin/python", "-m", "ml_mcp.workers.daemon"]
+ENTRYPOINT ["/opt/venv/bin/python"]
+CMD ["-m", "ml_mcp.workers.daemon"]

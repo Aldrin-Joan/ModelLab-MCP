@@ -258,6 +258,7 @@ Runs ModelLab inside an isolated Docker container with standard I/O (`sys.stdin`
         "run",
         "-i",
         "--rm",
+        "--entrypoint", "python",
         "--network", "host",
         "-e", "APP_ENV=production",
         "-e", "DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/modellab",
@@ -267,7 +268,7 @@ Runs ModelLab inside an isolated Docker container with standard I/O (`sys.stdin`
         "-e", "OBJECT_STORE_SECRET_ACCESS_KEY=minioadmin",
         "-e", "OBJECT_STORE_BUCKET_NAME=modellab-artifacts",
         "modellab-api",
-        "/opt/venv/bin/python", "-m", "ml_mcp.server.stdio"
+        "-m", "ml_mcp.server.stdio"
       ]
     }
   }
@@ -278,6 +279,7 @@ Runs ModelLab inside an isolated Docker container with standard I/O (`sys.stdin`
 > ```json
 > "args": [
 >   "run", "-i", "--rm",
+>   "--entrypoint", "python",
 >   "--network", "modellab_default",
 >   "-e", "DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/modellab",
 >   "-e", "REDIS_URL=redis://redis:6379/0",
@@ -286,7 +288,7 @@ Runs ModelLab inside an isolated Docker container with standard I/O (`sys.stdin`
 >   "-e", "OBJECT_STORE_SECRET_ACCESS_KEY=minioadmin",
 >   "-e", "OBJECT_STORE_BUCKET_NAME=modellab-artifacts",
 >   "modellab-api",
->   "/opt/venv/bin/python", "-m", "ml_mcp.server.stdio"
+>   "-m", "ml_mcp.server.stdio"
 > ]
 > ```
 
