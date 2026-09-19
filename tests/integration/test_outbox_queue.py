@@ -39,6 +39,7 @@ async def test_outbox_dispatch_to_queue(db: DatabaseManager):
         sess.add(event)
 
     queue = RedisTaskQueue()
+    queue.queue_name = f"test:tasks:{exp_id}"
     while await queue.dequeue(timeout_seconds=0.01) is not None:
         pass
 

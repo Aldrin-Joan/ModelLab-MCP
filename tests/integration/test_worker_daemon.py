@@ -42,11 +42,12 @@ async def test_daemon_handles_empty_queue_and_stops():
 @pytest.mark.asyncio
 async def test_daemon_dequeues_and_executes(db: DatabaseManager):
     """Verify daemon dequeues a message and invokes WorkerRunner.execute_experiment."""
-    queue = RedisTaskQueue()
-    daemon = WorkerDaemon(task_queue=queue, db_manager=db)
-
     exp_id = generate_uuid7()
     tenant_id = generate_uuid7()
+
+    queue = RedisTaskQueue()
+    queue.queue_name = f"test:tasks:{exp_id}"
+    daemon = WorkerDaemon(task_queue=queue, db_manager=db)
 
     # Enqueue a task
     await queue.enqueue(
@@ -80,12 +81,13 @@ async def test_daemon_dequeues_and_executes(db: DatabaseManager):
 @pytest.mark.asyncio
 async def test_daemon_isolated_task_failure(db: DatabaseManager):
     """Verify exception during a task does not crash the daemon polling loop."""
-    queue = RedisTaskQueue()
-    daemon = WorkerDaemon(task_queue=queue, db_manager=db)
-
     exp_id_1 = generate_uuid7()
     exp_id_2 = generate_uuid7()
     tenant_id = generate_uuid7()
+
+    queue = RedisTaskQueue()
+    queue.queue_name = f"test:tasks:{exp_id_1}"
+    daemon = WorkerDaemon(task_queue=queue, db_manager=db)
 
     await queue.enqueue(
         experiment_id=exp_id_1,

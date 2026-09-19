@@ -58,6 +58,16 @@ The architecture deliberately separates:
 -   Authentication and authorization are separate concerns.
 -   Least privilege is applied to tools, datasets, models and execution
     resources.
+
+### Architecture Decision Records (ADRs)
+Key architectural trade-offs, rationale, and technology choices are formally recorded in [Architecture Decision Records](decisions/README.md):
+- [ADR-0001: Streamable HTTP Transport with OAuth 2.1](decisions/0001-streamable-http-mcp-transport-and-oauth2-auth.md)
+- [ADR-0002: Asynchronous Worker Queue Architecture](decisions/0002-asynchronous-worker-queue-architecture.md)
+- [ADR-0003: Multi-Tenant Data Isolation, Scoped RBAC, and Sliding-Window Rate Limiting](decisions/0003-multi-tenant-isolation-and-rbac.md)
+- [ADR-0004: Parquet Format Optimization for High-Volume Tabular Ingestion](decisions/0004-tabular-data-ingestion-and-parquet-optimization.md)
+- [ADR-0005: Database Exception Sanitization and Anti-Disclosure Error Handling](decisions/0005-sanitized-error-handling-and-anti-disclosure.md)
+- [ADR-0006: First-Class Project Management and Workspace Hierarchy](decisions/0006-project-hierarchy-and-workspace-management.md)
+
 -   All external boundaries have explicit timeouts, retry budgets and
     size limits.
 -   Every production mutation is auditable.

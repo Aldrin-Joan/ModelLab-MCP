@@ -1,5 +1,6 @@
 """Root pytest fixtures ensuring test isolation and hermetic teardown."""
 
+import contextlib
 import os
 from collections.abc import AsyncGenerator
 
@@ -59,17 +60,14 @@ async def hermetic_database() -> AsyncGenerator[None]:
 async def hermetic_redis() -> AsyncGenerator[None]:
     """Close Redis client pool and reset singleton before and after each test."""
     if client._redis_manager is not None:
-        try:
+        with contextlib.suppress(RuntimeError, Exception):
             await client._redis_manager.client.flushdb()
-        except (RuntimeError, Exception):
-            pass
     yield
     if client._redis_manager is not None:
         try:
-            await client._redis_manager.client.flushdb()
-            await client._redis_manager.close()
-        except (RuntimeError, Exception):
-            pass
+            with contextlib.suppress(RuntimeError, Exception):
+                await client._redis_manager.client.flushdb()
+                await client._redis_manager.close()
         finally:
             client._redis_manager = None
 

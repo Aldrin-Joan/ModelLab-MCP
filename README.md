@@ -3,7 +3,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![MCP Protocol](https://img.shields.io/badge/MCP%20Protocol-2026--07--28-orange.svg)](https://modelcontextprotocol.io/)
 [![FastMCP](https://img.shields.io/badge/FastMCP-4.0.5%20GA-green.svg)](https://github.com/jlowin/fastmcp)
-[![Tests](https://img.shields.io/badge/tests-75%20passed%20%7C%20100%25-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-101%20passed%20%7C%20100%25-brightgreen.svg)]()
 [![Code Style](https://img.shields.io/badge/code%20style-ruff-black.svg)](https://github.com/astral-sh/ruff)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Security](https://img.shields.io/badge/security-OAuth%202.1%20%2F%20OIDC-purple.svg)]()
@@ -15,7 +15,7 @@
 ## Key Highlights
 
 - **Zero Placeholders, Real Tabular ML**: Fully implemented, sandboxed training algorithms for all 7 approved tabular architectures: **Logistic Regression**, **Random Forest**, **XGBoost**, **LightGBM**, **CatBoost**, **Linear SVM**, and **Multi-Layer Perceptron (MLP)**.
-- **21 MCP Tools, 3 Resources, 2 Prompts**: Comprehensive tool catalog across Discovery, Ingestion, Experimentation, Artifacts, and Diagnostics.
+- **23 MCP Tools, 3 Resources, 2 Prompts**: Comprehensive tool catalog across Projects, Discovery, Ingestion, Experimentation, Artifacts, and Diagnostics.
 - **Strict Leak-Free Preprocessing**: Preprocessing transforms (median/mode imputation, standard scaling, one-hot encoding) are fitted strictly on training folds and serialized alongside models.
 - **Dual Production Transports**:
   - **STDIO Transport**: Pure JSON-RPC on standard output (`sys.stdout`) with all structured logging isolated strictly to `sys.stderr`.
@@ -23,7 +23,7 @@
 - **OAuth 2.1 & Multi-Tenant Security**: Tenant boundary enforcement, RBAC matrix (`Viewer`, `Researcher`, `Operator`, `Admin`), token scope attenuation, and anti-enumeration protections (HTTP 404 instead of 403 on cross-tenant probes).
 - **Transactional Outbox Architecture**: Guarantees zero lost experiment submissions using PostgreSQL transactional Outbox events dispatched to Redis queues.
 - **S3 / MinIO Object Storage**: Immutable tenant-isolated artifact storage with SHA-256 integrity verification, presigned download URLs, and offline memory fallback.
-- **Full Test Coverage**: **75 tests passing (100% green)** across unit, integration, security matrix, MCP contract, and full end-to-end experiment lifecycle.
+- **Full Test Coverage**: **101 tests passing (100% green)** across unit, integration, security matrix, MCP contract, and full end-to-end experiment lifecycle.
 
 ---
 
@@ -88,9 +88,16 @@ flowchart TD
 
 ## Complete MCP Tool Catalog
 
-ModelLab exposes 21 granular tools across 5 functional categories:
+ModelLab exposes 23 granular tools across 6 functional categories:
 
-### 1. Discovery Tools
+### 1. Project Management Tools
+
+| Tool Name | Parameters | Required Scope | Description |
+| :--- | :--- | :--- | :--- |
+| `create_project` | `name`, `description` *(opt)* | `ml:projects:write` | Create a new project workspace under the caller's tenant boundary. |
+| `list_projects` | `limit` *(opt)*, `offset` *(opt)* | `ml:projects:read` | List active projects accessible within the caller's tenant boundary. |
+
+### 2. Discovery Tools
 
 | Tool Name | Parameters | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
@@ -101,7 +108,7 @@ ModelLab exposes 21 granular tools across 5 functional categories:
 | `get_dataset` | `dataset_id` | `ml:datasets:read` | Retrieve metadata, format, and version history for a specific dataset. |
 | `list_dataset_versions` | `dataset_id` | `ml:datasets:read` | List immutable versions, row counts, and SHA-256 hashes for a dataset. |
 
-### 2. Dataset Management & Validation Tools
+### 3. Dataset Management & Validation Tools
 
 | Tool Name | Parameters | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
@@ -109,7 +116,7 @@ ModelLab exposes 21 granular tools across 5 functional categories:
 | `validate_dataset` | `format`, `data_base64` | `ml:datasets:read` | Validate raw dataset bytes against schema rules and row limits without persisting. |
 | `inspect_dataset` | `dataset_id`, `version`, `sample_rows` | `ml:datasets:read` | Inspect schema column types, missingness, and head preview rows. |
 
-### 3. Experimentation Tools
+### 4. Experimentation Tools
 
 | Tool Name | Parameters | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
@@ -118,7 +125,7 @@ ModelLab exposes 21 granular tools across 5 functional categories:
 | `cancel_experiment` | `experiment_id` | `ml:experiments:cancel` | Gracefully cancel an active or queued experiment run. |
 | `list_experiments` | `project_id`, `status`, `limit`, `offset` | `ml:experiments:read` | Paginated listing of experiments within a project with optional status filter. |
 
-### 4. Results & Artifacts Tools
+### 5. Results & Artifacts Tools
 
 | Tool Name | Parameters | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
@@ -128,7 +135,7 @@ ModelLab exposes 21 granular tools across 5 functional categories:
 | `read_experiment_artifact` | `artifact_id` | `ml:artifacts:read` | Retrieve artifact metadata and secure presigned S3 download URL. |
 | `compare_experiments` | `experiment_ids` | `ml:experiments:read` | Side-by-side comparison of validation metrics and hyperparameters across runs. |
 
-### 5. Structured Diagnostic Analysis Tools
+### 6. Structured Diagnostic Analysis Tools
 
 | Tool Name | Parameters | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
@@ -235,40 +242,145 @@ python -m ml_mcp.server.stdio
 
 ## MCP Client Configuration
 
-### Claude Desktop (`claude_desktop_config.json`)
+ModelLab supports both **STDIO** (local subprocess IPC) and **Streamable HTTP** (networked SSE + POST) transports across both **Docker** and **UV / local Python**.
+
+Select your preferred runtime configuration below:
+
+### 1. Docker + STDIO
+Runs ModelLab inside an isolated Docker container with standard I/O (`sys.stdin` / `sys.stdout`) piped directly to the MCP client.
 
 ```json
 {
   "mcpServers": {
     "modellab": {
-      "command": "C:\\Users\\Aldrin Joan\\.conda\\envs\\ML_LLM\\python.exe",
-      "args": ["-m", "ml_mcp.server.stdio"],
-      "env": {
-        "APP_ENVIRONMENT": "production",
-        "DATABASE_URL": "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/modellab",
-        "REDIS_URL": "redis://localhost:6379/0",
-        "OBJECT_STORE_ENDPOINT_URL": "http://localhost:9000",
-        "OBJECT_STORE_ACCESS_KEY_ID": "minioadmin",
-        "OBJECT_STORE_SECRET_ACCESS_KEY": "minioadmin"
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--network", "host",
+        "-e", "APP_ENV=production",
+        "-e", "DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/modellab",
+        "-e", "REDIS_URL=redis://localhost:6379/0",
+        "-e", "OBJECT_STORE_ENDPOINT_URL=http://localhost:9000",
+        "-e", "OBJECT_STORE_ACCESS_KEY_ID=minioadmin",
+        "-e", "OBJECT_STORE_SECRET_ACCESS_KEY=minioadmin",
+        "-e", "OBJECT_STORE_BUCKET_NAME=modellab-artifacts",
+        "modellab-api",
+        "/opt/venv/bin/python", "-m", "ml_mcp.server.stdio"
+      ]
+    }
+  }
+}
+```
+
+> **Note for Docker Desktop (macOS / Windows)**: If `--network host` is unavailable in your Docker Desktop environment, connect via the shared Docker network:
+> ```json
+> "args": [
+>   "run", "-i", "--rm",
+>   "--network", "modellab_default",
+>   "-e", "DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/modellab",
+>   "-e", "REDIS_URL=redis://redis:6379/0",
+>   "-e", "OBJECT_STORE_ENDPOINT_URL=http://minio:9000",
+>   "-e", "OBJECT_STORE_ACCESS_KEY_ID=minioadmin",
+>   "-e", "OBJECT_STORE_SECRET_ACCESS_KEY=minioadmin",
+>   "-e", "OBJECT_STORE_BUCKET_NAME=modellab-artifacts",
+>   "modellab-api",
+>   "/opt/venv/bin/python", "-m", "ml_mcp.server.stdio"
+> ]
+> ```
+
+---
+
+### 2. Docker + HTTP
+Connects to the ModelLab API service running inside Docker Compose (`docker compose -f docker-compose.http.yml up -d`).
+
+```json
+{
+  "mcpServers": {
+    "modellab": {
+      "url": "http://localhost:8000/mcp",
+      "headers": {
+        "Authorization": "Bearer <YOUR_JWT_BEARER_TOKEN>"
       }
     }
   }
 }
 ```
 
-### Antigravity IDE / VS Code / Cursor (Streamable HTTP)
+---
+
+### 3. UV + STDIO
+Runs ModelLab locally using Astral `uv` without requiring a container for the server process (connecting to local or Dockerized PostgreSQL, Redis, and MinIO services).
 
 ```json
 {
   "mcpServers": {
     "modellab": {
-      "url": "http://127.0.0.1:8000/mcp",
-      "headers": {
-        "Authorization": "Bearer <YOUR_OIDC_BEARER_TOKEN>"
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory", "/absolute/path/to/ModelLab",
+        "python", "-m", "ml_mcp.server.stdio"
+      ],
+      "env": {
+        "APP_ENV": "production",
+        "DATABASE_URL": "postgresql+asyncpg://postgres:postgres@localhost:5433/modellab",
+        "REDIS_URL": "redis://localhost:6379/0",
+        "OBJECT_STORE_ENDPOINT_URL": "http://localhost:9000",
+        "OBJECT_STORE_ACCESS_KEY_ID": "minioadmin",
+        "OBJECT_STORE_SECRET_ACCESS_KEY": "minioadmin",
+        "OBJECT_STORE_BUCKET_NAME": "modellab-artifacts"
       }
     }
   }
 }
+```
+
+---
+
+### 4. UV + HTTP
+Starts the ModelLab HTTP service locally with `uv` and connects client agents via Streamable HTTP.
+
+**1. Launch the server:**
+```bash
+uv run python -m ml_mcp.server.http
+```
+
+**2. Client Configuration (`mcp.json` / `claude_desktop_config.json`):**
+```json
+{
+  "mcpServers": {
+    "modellab": {
+      "url": "http://localhost:8000/mcp",
+      "headers": {
+        "Authorization": "Bearer <YOUR_JWT_BEARER_TOKEN>"
+      }
+    }
+  }
+}
+```
+
+---
+
+### Generating an OAuth 2.1 Bearer Token (for HTTP Modes)
+
+Generate a cryptographically signed JWT token for authentication in HTTP mode:
+
+```bash
+uv run python -c "
+from ml_mcp.server.auth import TokenValidator
+from ml_mcp.domain.policies import Role, Scope
+
+validator = TokenValidator()
+token = validator.create_access_token(
+    principal_id='agent-user',
+    tenant_id='default-tenant',
+    role=Role.ADMIN,
+    scopes=[s.value for s in Scope],
+)
+print('Bearer Token:\n' + token)
+"
 ```
 
 ---
