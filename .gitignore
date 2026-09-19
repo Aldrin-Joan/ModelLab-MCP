@@ -1,0 +1,244 @@
+# ============================================================
+# Python
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Python build / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.pyre/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.ruff_cache/
+.ty_cache/
+catboost_info/
+
+# ============================================================
+# IDE / Editors
+# ============================================================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Antigravity / agent-local files
+.agent/
+.agents/
+.antigravity/
+agy/
+
+# ============================================================
+# Environment / Secrets
+# ============================================================
+
+.env
+.env.*
+!.env.example
+!.env.template
+
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Local credentials / tokens
+credentials.json
+secrets.json
+service-account*.json
+*-credentials.json
+
+# ============================================================
+# ML / Data Science
+# ============================================================
+
+# Local datasets
+data/
+datasets/
+raw_data/
+processed_data/
+training_data/
+test_data/
+
+# Large ML artifacts
+models/
+checkpoints/
+weights/
+artifacts/
+runs/
+mlruns/
+wandb/
+tensorboard/
+lightning_logs/
+
+# Model files
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.joblib
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.bin
+
+# Experiment outputs
+experiments/
+experiment_outputs/
+predictions/
+evaluation/
+reports/generated/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ============================================================
+# Local Storage / Databases
+# ============================================================
+
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Local Redis / Valkey persistence
+dump.rdb
+appendonly.aof
+appendonlydir/
+
+# ============================================================
+# Logs / Runtime
+# ============================================================
+
+*.log
+logs/
+tmp/
+temp/
+.cache/
+.cache-loader/
+
+# Runtime state
+*.pid
+*.pid.lock
+*.sock
+
+# ============================================================
+# Docker
+# ============================================================
+
+.docker/
+docker-data/
+docker-volumes/
+
+# ============================================================
+# OS
+# ============================================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+
+# ============================================================
+# Documentation generated output
+# ============================================================
+
+site/
+docs/_build/
+docs/generated/
+
+# ============================================================
+# Temporary exports / archives
+# ============================================================
+
+*.tmp
+*.temp
+*.bak
+*.backup
+.ruff_cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ty_cache/
+*.orig
+*.rej
+
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# ============================================================
+# Local development scripts / state
+# ============================================================
+
+.local/
+.local-data/
+.local-state/
+workspace/
+scratch/
+
+# ============================================================
+# Security / scanning output
+# ============================================================
+
+.bandit/
+.semgrep/
+trivy-report.json
+trivy-report.sarif
+
+# ============================================================
+# OS / editor lock files
+# ============================================================
+
+*.lock~
