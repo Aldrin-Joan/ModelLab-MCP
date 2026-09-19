@@ -221,7 +221,7 @@ docs/generated/
 # ============================================================
 # Local development scripts / state
 # ============================================================
-
+scratch
 .local/
 .local-data/
 .local-state/

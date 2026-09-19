@@ -10,7 +10,7 @@ from ml_mcp.application.analysis.diagnostics import (
     DataLeakageDetector,
     OverfittingDetector,
 )
-from ml_mcp.domain.errors import ResourceNotFoundError
+from ml_mcp.domain.errors import InvalidInputError, ResourceNotFoundError
 from ml_mcp.infrastructure.postgres.base import generate_uuid7
 from ml_mcp.infrastructure.postgres.models import AnalysisRunOrm, ExperimentOrm, MetricOrm
 
@@ -34,10 +34,20 @@ class AnalysisService:
         if not exp:
             raise ResourceNotFoundError("Experiment", experiment_id)
 
+        if exp.status != "SUCCEEDED":
+            raise InvalidInputError(
+                f"Experiment '{experiment_id}' has not completed successfully (current status: {exp.status}). "
+                "Only completed experiments with recorded metrics can be analyzed."
+            )
+
         # 2. Fetch metrics
         m_stmt = select(MetricOrm).where(MetricOrm.experiment_id == experiment_id)
         m_result = await self.session.execute(m_stmt)
         all_metrics = m_result.scalars().all()
+        if not all_metrics:
+            raise InvalidInputError(
+                f"Experiment '{experiment_id}' has no recorded evaluation metrics to analyze."
+            )
 
         train_metrics: dict[str, float] = {}
         val_metrics: dict[str, float] = {}

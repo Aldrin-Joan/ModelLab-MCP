@@ -1,135 +1,73 @@
-# Implementation Plan: Agentic ML MCP Server (ModelLab)
+# Implementation Plan: ModelLab MCP Test Report Remediation & Project Bootstrap
 
 ## Overview
-A production-grade, secure, reproducible machine learning experimentation control plane exposed via the Model Context Protocol (MCP `2026-07-28` standard and FastMCP 4), executing on Python 3.13 within the `ML_LLM` conda environment.
+This plan addresses all issues, data-integrity bugs, security information disclosures, and downstream blockages identified in the ModelLab MCP Test Report (2026-09-19).
+Specifically, it introduces first-class Project management (`create_project`, `list_projects`) and automatic default project seeding (`default-project`), fixes the hardcoded format bug in dataset registration, sanitizes database exceptions to eliminate information disclosure, enforces consistent project validation across read/write endpoints, hardens dataset input/base64 decoding against malformed payloads, assigns distinct container image digests to each approved model family, and unblocks and verifies all 8 downstream tools through comprehensive contract and integration tests.
 
-## Architecture Decisions & Rationale
-1. **Control Plane / Execution Plane Separation**: FastMCP handles tool routing, schema validation, and authorization, but never directly imports or trains ML models on the server event loop. ML workers execute asynchronously in containerized or process-isolated boundaries.
-2. **Durable Outbox Pattern**: Experiments submitted via FastMCP are written transactionally with an outbox event in PostgreSQL before being dispatched to the Redis queue, preventing lost submissions during transient failures.
-3. **Pydantic 2 & JSON Schema 2020-12**: Strict type validation across all MCP inputs and outputs. Models and datasets are registered, versioned, and addressed by content hash.
-4. **Parquet / Arrow Internal Representation**: Analytical datasets and predictions are stored in Apache Parquet/Arrow format for compression, performance, and typed streaming.
-5. **Multi-Transport Support**: Native STDIO (clean stdout for JSON-RPC; stderr for structured logs) and Streamable HTTP (OAuth 2.1 / OIDC Bearer JWT, stateless requests, health probes at `/health/live` and `/health/ready`).
+## Architecture Decisions
+1. **First-Class Project Lifecycle**:
+   - Add `ProjectRepository` in `src/ml_mcp/infrastructure/postgres/repositories/projects.py`.
+   - Add `ProjectService` in `src/ml_mcp/application/projects/service.py`.
+   - Expose `create_project` and `list_projects` FastMCP tools (scoped with `PROJECTS_WRITE` and `PROJECTS_READ` in `rbac.py`).
+   - Auto-seed `default-project` ("Default Project") for `default-tenant` during server lifespan startup so the server is functional immediately out-of-the-box.
+2. **Dataset Format Preservation**:
+   - In `DatasetService.register_dataset`, dynamically map `data_format` (str or enum) to lower-case string (e.g., `"csv"`, `"parquet"`, `"jsonl"`) and store it in `DatasetOrm(format=fmt)`.
+3. **Database Exception Sanitization**:
+   - In `_execute_secured` (`src/ml_mcp/server/app.py`), intercept SQLAlchemy `IntegrityError` and `DBAPIError`.
+   - Translate foreign key constraint failures (e.g., non-existent `project_id`, `dataset_id`) into `ResourceNotFoundError`.
+   - Translate unique constraint violations and malformed data into `InvalidInputError`.
+   - Strip all raw SQL, table names, and parameter dumps to prevent information leakage.
+4. **Consistent Project Existence Validation**:
+   - Validate project existence in `list_experiments` when `project_id` is supplied: if the project does not exist under the tenant, raise `ResourceNotFoundError` rather than returning `[]`.
+5. **Strict Base64 & Malformed Input Handling**:
+   - Use `base64.b64decode(data_base64, validate=True)` with explicit `binascii.Error` trapping in `handle_register_dataset` and `handle_validate_dataset`, converting decode failures into `InvalidInputError`.
+   - Ensure `DatasetValidator` strictly flags malformed or truncated CSV/JSONL/Parquet payloads.
+6. **Deterministic Per-Family Model Digests**:
+   - In `src/ml_mcp/application/models/catalog_seed.py`, replace the identical placeholder digest with distinct, deterministic SHA-256 digests computed per model family.
+7. **Downstream Verification**:
+   - Exercise the entire end-to-end pipeline: Project creation -> Dataset registration -> Dataset validation/inspection -> Experiment creation -> Artifact listing/reading -> Metrics & predictions retrieval -> Experiment analysis & error diagnosis.
 
 ## Task List
 
-### Phase 1: Project Scaffolding, Tooling & Configuration
-- [ ] Task 1.1: Project Baseline & Dependency Management (`pyproject.toml`, conda `ML_LLM`, tooling configs)
-- [ ] Task 1.2: Centralized Application Configuration & Settings (`settings.py`, Pydantic Settings)
-- [ ] Task 1.3: Telemetry, Structured Logging & Local Infrastructure Setup (`logging.py`, `otel.py`, `docker-compose.yml`)
+### Phase 1: Core Domain, RBAC & Repositories
+- [ ] Task 1: Add `PROJECTS_READ` and `PROJECTS_WRITE` scopes to RBAC policy matrix in `src/ml_mcp/domain/policies/rbac.py`.
+- [ ] Task 2: Implement `ProjectRepository` in `src/ml_mcp/infrastructure/postgres/repositories/projects.py` with get, create, list, and get_or_create_default methods.
+- [ ] Task 3: Implement `ProjectService` in `src/ml_mcp/application/projects/service.py`.
 
-### Checkpoint 1: Scaffolding & Infrastructure
-- [ ] Dependencies verified in `ML_LLM` conda env
-- [ ] Structured logging outputs strictly to stderr
-- [ ] Local persistence services operational via Docker Compose
+### Checkpoint: Foundation
+- [ ] Unit tests for ProjectRepository and ProjectService pass.
 
-### Phase 2: Domain Modeling, Policies & Error Handling
-- [ ] Task 2.1: Domain Errors & Stable Error Codes (`codes.py`, sanitized exceptions)
-- [ ] Task 2.2: Value Objects & Experiment Specifications (`ExperimentSpec`, `TaskType`, `ModelFamily`, schemas)
-- [ ] Task 2.3: Security Policies, RBAC Matrix & Tool Classification (`rbac.py`, `tool_policy.py`, `tenant_isolation.py`)
+### Phase 2: Service Bug Fixes & Hardening
+- [ ] Task 4: Fix hardcoded `format="parquet"` bug in `src/ml_mcp/application/datasets/service.py`.
+- [ ] Task 5: Harden base64 decoding (`validate=True`) and input validation in `src/ml_mcp/mcp/tools/datasets.py` and `validator.py`.
+- [ ] Task 6: Assign distinct deterministic container image digests to each approved model family in `src/ml_mcp/application/models/catalog_seed.py`.
 
-### Checkpoint 2: Domain Layer
-- [ ] Domain errors sanitized and standardized
-- [ ] Value objects enforce business invariants
-- [ ] RBAC and tenant isolation policy test suite passes
+### Checkpoint: Service Layer
+- [ ] Dataset registration correctly stores format ("csv", etc.).
+- [ ] Model versions return distinct image digests.
+- [ ] Malformed base64/dataset payloads raise clean validation errors.
 
-### Phase 3: Database & Persistence Infrastructure
-- [ ] Task 3.1: Async SQLAlchemy 2 ORM Models (Tenants, Models, Datasets, Experiments, Metrics, Artifacts, Outbox, Audit)
-- [ ] Task 3.2: Database Engine, Session Factory & Alembic Migrations (`session.py`, `alembic/`)
-- [ ] Task 3.3: Repository Implementations (Model, Dataset, Experiment, Metric, Artifact, Outbox, Audit repositories)
+### Phase 3: FastMCP Tools, Lifespan Seed & Exception Sanitization
+- [ ] Task 7: Implement `handle_create_project` and `handle_list_projects` in `src/ml_mcp/mcp/tools/projects.py`.
+- [ ] Task 8: Update `handle_list_experiments` in `src/ml_mcp/mcp/tools/experiments.py` to validate `project_id` existence.
+- [ ] Task 9: Register `create_project` and `list_projects` tools in `src/ml_mcp/server/app.py`, add default project seeding in `app_lifespan`, and sanitize database exceptions in `_execute_secured`.
 
-### Checkpoint 3: Persistence Layer
-- [ ] Database migrations execute up and down cleanly
-- [ ] Repositories pass integration tests against PostgreSQL
-- [ ] Outbox pattern verified within database transactions
+### Checkpoint: FastMCP Server Layer
+- [ ] `create_server()` registers all 23 tools.
+- [ ] Startup seeds `default-project` for `default-tenant`.
+- [ ] Constraint violations return sanitized domain errors without SQL leakage.
 
-### Phase 4: Object Storage & Data Processing Engine
-- [ ] Task 4.1: S3-Compatible Storage Adapter & Presigned URLs (`s3.py`, MinIO integration)
-- [ ] Task 4.2: Dataset Validation, Schema Extraction & Ingestion (CSV, Parquet, JSONL validation & SHA-256)
-- [ ] Task 4.3: Model Catalog Application Service (approved model registry & hyperparameter validation)
+### Phase 4: Downstream Tool Verification & Contract Tests
+- [ ] Task 10: Update contract tests in `tests/contract/test_mcp_tools.py` for 23 tools, project management, and format verification.
+- [ ] Task 11: Create comprehensive integration test `tests/integration/test_test_report_remediation.py` testing all previously failing/blocked write paths and downstream tools end-to-end against live PostgreSQL.
 
-### Checkpoint 4: Storage & Catalog Services
-- [ ] S3 uploads, downloads, and presigned URLs validated
-- [ ] Ingestion validates CSV/Parquet/JSONL datasets
-- [ ] Model catalog enforces approval constraints
-
-### Phase 5: Redis Infrastructure, Rate Limiting & Outbox Queue
-- [ ] Task 5.1: Redis Client & Sliding-Window Rate Limiter (`client.py`, `rate_limiter.py`)
-- [ ] Task 5.2: Durable Outbox Processor & Task Queue (`task_queue.py`, `outbox_processor.py`)
-
-### Checkpoint 5: Rate Limiting & Queue Pipeline
-- [ ] Sliding-window rate limiter prevents abuse across all tool classes
-- [ ] Outbox processor guarantees reliable event publication from Postgres to Redis
-
-### Phase 6: Tabular ML Execution Worker Engine
-- [ ] Task 6.1: ML Feature Preprocessing & Split Pipeline (leak-free imputers, encoders, scalers, cross-validation splits)
-- [ ] Task 6.2: Model Trainers & Evaluation Engine (Logistic Regression, Random Forest, XGBoost, LightGBM, CatBoost, Linear SVM, MLP + metric suite)
-- [ ] Task 6.3: Worker Orchestrator & Execution Isolation Boundary (runner loop, timeouts, memory bounds, artifact persistence)
-
-### Checkpoint 6: ML Worker Execution
-- [ ] Preprocessing guarantees zero data leakage
-- [ ] All 7 tabular model trainers execute and compute metrics
-- [ ] Worker runner safely manages timeouts and uploads artifacts
-
-### Phase 7: Structured Analysis Engine
-- [ ] Task 7.1: Statistical Analysis, Overfitting & Leakage Detection (overfitting gap, leakage indicators, error analysis)
-
-### Checkpoint 7: Analysis Engine
-- [ ] Read-only analysis delivers comprehensive diagnostic findings
-- [ ] Recommendations and statistical observations formatted cleanly
-
-### Phase 8: FastMCP Protocol Adapter, Transports & Security Pipeline
-- [ ] Task 8.1: Authentication & JWT Validation Module (OAuth 2.1 / OIDC Bearer JWT validation)
-- [ ] Task 8.2: FastMCP Schemas & Tool Implementations (Discovery, Dataset, Experiment, Results, Analysis tools)
-- [ ] Task 8.3: FastMCP Resources, Prompts & Server Factory (`resources.py`, `prompts.py`, `app.py`)
-- [ ] Task 8.4: Transports (STDIO & Streamable HTTP) & Health Endpoints (`stdio.py`, `http.py`, `/health/*`)
-
-### Checkpoint 8: FastMCP Server & Transports
-- [ ] All 18 MCP tools operational with schema validation
-- [ ] STDIO transport preserves pure JSON-RPC stdout
-- [ ] Streamable HTTP transport enforces auth and responds to health endpoints
-
-### Phase 9: Comprehensive Security, Contract & E2E Verification
-- [ ] Task 9.1: Security Test Matrix Implementation (JWT attacks, scope escalation, tenant isolation, path traversal)
-- [ ] Task 9.2: End-to-End Experimentation Lifecycle Test (register dataset -> experiment -> worker -> metrics -> analysis)
-
-### Checkpoint 9: Security & E2E Verification
-- [ ] Security test matrix passes all attack scenarios
-- [ ] E2E lifecycle test passes with real ML training and analysis
-
-### Phase 10: Containerization, CI/CD & Deployment Artifacts
-- [x] Task 10.1: Multi-Stage Production Dockerfiles (`ml-mcp-api` & `ml-worker-tabular-cpu`)
-- [x] Task 10.2: GitHub Actions CI Pipeline & Operational Documentation (`.github/workflows/ci.yml`, `Docs/Operational-Guide.md`)
-
-### Checkpoint 10: Production Readiness Baseline Complete
-- [x] Docker images build clean, non-root, hardened
-- [x] CI pipeline validates formatting, linting, typing, tests
-- [x] Initial 75 tests passing green
-
-### Phase 11: Production Remediation (CRIT & REQ Fixes)
-- [x] Task 11.1: Worker Consumer Daemon & Non-Blocking Execution (CRIT-01, REQ-06)
-- [x] Task 11.2: Storage Hardening: Private S3 Bucket & Path Traversal Sanitization (CRIT-02, REQ-03)
-- [x] Task 11.3: Application Layer Extraction & Model Approval Enforcement (CRIT-03, CRIT-04, REQ-05)
-- [x] Task 11.4: OAuth 2.1 Scope Attenuation & JWT Algorithm Pinning (REQ-01, REQ-02)
-- [x] Task 11.5: Anti-Enumeration & Atomic Rate Limiter (REQ-04, REQ-07)
-- [x] Task 11.6: Test Suite Hermeticity, Conftest & Negative Tests (QA Audit)
-- [x] Task 11.7: Code Hygiene & Full Verification (`ruff` clean & 100% green test suite)
-
-### Checkpoint 11: Full Production Certification
-- [x] All 3 Critical and 7 Required issues remediated
-- [x] Centralized tests/conftest.py prevents all state leakage
-- [x] Ruff reports 0 errors and 0 formatting issues
-- [x] 100% test pass rate on full regression suite
+### Checkpoint: Complete Verification
+- [ ] All contract and integration tests pass (100% green).
+- [ ] Ruff linting passes with 0 errors.
 
 ## Risks and Mitigations
 | Risk | Impact | Mitigation |
-|---|---|---|
-| ML Worker Resource Exhaustion | High | Process quotas, wall-clock timeouts, isolated execution boundary, and task cancellation handling. |
-| Data Leakage during Preprocessing | High | Strict leak-free pipeline where transforms are fit exclusively on train splits; automated leakage checks in analysis engine. |
-| STDIO Stream Contamination | High | Strict logging configuration directing all output, traces, and diagnostics to `sys.stderr`. |
-| Cross-Tenant Data Access | Critical | Repository-level tenant scoping, JWT claim binding, and automated security test matrix. |
-| JWT Algorithm Confusion | Critical | Pin expected algorithm strictly in server settings, rejecting unverified header algorithm switches. |
-| Test State Pollution | Medium | Autouse reset fixtures in centralized `tests/conftest.py` clearing memory stores and DB tables. |
-
-## Open Questions
-- None currently blocking; all remediation requirements have concrete technical specifications.
-
+|------|--------|------------|
+| Adding 2 new tools breaks tests asserting exact tool count (21) | High | Update `test_tool_catalog_contract` assertion from 21 to 23 and include `create_project` & `list_projects`. |
+| Auto-seeding default project fails if tenant does not exist | Med | In `ensure_default_project`, check and ensure `default-tenant` exists first in the database. |
+| Existing migrations might require schema changes | Low | `ProjectOrm` already exists in `models.py` and Alembic migrations already created `projects` table; no migration changes needed. |

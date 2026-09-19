@@ -39,6 +39,8 @@ async def test_outbox_dispatch_to_queue(db: DatabaseManager):
         sess.add(event)
 
     queue = RedisTaskQueue()
+    while await queue.dequeue(timeout_seconds=0.01) is not None:
+        pass
 
     # 2. Process outbox batch
     async with db.session() as sess:

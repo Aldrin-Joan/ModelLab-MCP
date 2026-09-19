@@ -57,11 +57,21 @@ async def hermetic_database() -> AsyncGenerator[None]:
 
 @pytest.fixture(autouse=True)
 async def hermetic_redis() -> AsyncGenerator[None]:
-    """Close Redis client pool and reset singleton after each test."""
+    """Close Redis client pool and reset singleton before and after each test."""
+    if client._redis_manager is not None:
+        try:
+            await client._redis_manager.client.flushdb()
+        except (RuntimeError, Exception):
+            pass
     yield
     if client._redis_manager is not None:
-        await client._redis_manager.close()
-        client._redis_manager = None
+        try:
+            await client._redis_manager.client.flushdb()
+            await client._redis_manager.close()
+        except (RuntimeError, Exception):
+            pass
+        finally:
+            client._redis_manager = None
 
 
 @pytest.fixture(autouse=True)

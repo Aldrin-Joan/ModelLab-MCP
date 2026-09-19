@@ -19,6 +19,8 @@ class Role(StrEnum):
 class Scope(StrEnum):
     """Granular permission scopes for ML control plane operations."""
 
+    PROJECTS_READ = "ml:projects:read"
+    PROJECTS_WRITE = "ml:projects:write"
     MODELS_READ = "ml:models:read"
     DATASETS_READ = "ml:datasets:read"
     DATASETS_WRITE = "ml:datasets:write"
@@ -35,12 +37,15 @@ class Scope(StrEnum):
 # Standard role permissions matrix per Architecture.md section 7
 ROLE_PERMISSIONS: dict[Role, set[Scope]] = {
     Role.VIEWER: {
+        Scope.PROJECTS_READ,
         Scope.MODELS_READ,
         Scope.DATASETS_READ,
         Scope.EXPERIMENTS_READ,
         Scope.ARTIFACTS_READ,
     },
     Role.RESEARCHER: {
+        Scope.PROJECTS_READ,
+        Scope.PROJECTS_WRITE,
         Scope.MODELS_READ,
         Scope.DATASETS_READ,
         Scope.DATASETS_WRITE,
@@ -51,6 +56,8 @@ ROLE_PERMISSIONS: dict[Role, set[Scope]] = {
         Scope.ARTIFACTS_READ,
     },
     Role.OPERATOR: {
+        Scope.PROJECTS_READ,
+        Scope.PROJECTS_WRITE,
         Scope.MODELS_READ,
         Scope.DATASETS_READ,
         Scope.DATASETS_WRITE,

@@ -37,10 +37,25 @@ async def setup_db():
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Seed model catalog
+    # Seed model catalog and tenant projects
     async with db_mgr.session() as sess:
         service = ModelService(sess)
         await service.seed_catalog()
+        from ml_mcp.application.projects.service import ProjectService
+        from ml_mcp.infrastructure.postgres.models import ProjectOrm
+
+        proj_service = ProjectService(sess)
+        await proj_service.ensure_default_project("tenant-alpha")
+        await proj_service.ensure_default_project("tenant-bravo")
+
+        proj_a = ProjectOrm(
+            id="proj-a",
+            tenant_id="tenant-alpha",
+            name="Project Alpha",
+            description="Project for Tenant Alpha",
+        )
+        sess.add(proj_a)
+        await sess.flush()
 
     yield
     set_current_principal(None)
@@ -322,8 +337,10 @@ async def test_rate_limiting_enforcement():
     limiter = SlidingWindowRateLimiter()
     pipeline = SecurityPipeline(rate_limiter=limiter)
 
+    from ml_mcp.infrastructure.postgres.base import generate_uuid7
+
     test_principal = Principal(
-        principal_id="spammer-1",
+        principal_id=f"spammer-{generate_uuid7()}",
         tenant_id="tenant-rate-limited",
         role=Role.ADMIN,
         scopes={"*"},

@@ -25,6 +25,14 @@ async def handle_create_experiment(
     validate_tenant_access(principal, principal.tenant_id, project_id)
 
     async with get_db_manager().session() as sess:
+        from ml_mcp.domain.errors import ResourceNotFoundError
+        from ml_mcp.infrastructure.postgres.repositories.projects import ProjectRepository
+
+        proj_repo = ProjectRepository(sess)
+        proj = await proj_repo.get_project(principal.tenant_id, project_id)
+        if not proj:
+            raise ResourceNotFoundError("Project", project_id)
+
         service = ExperimentService(sess)
         return await service.create_experiment(
             tenant_id=principal.tenant_id,
@@ -65,7 +73,19 @@ async def handle_list_experiments(
     offset: int = 0,
 ) -> list[dict[str, Any]]:
     principal.enforce_permission(Scope.EXPERIMENTS_READ)
+    if project_id:
+        validate_tenant_access(principal, principal.tenant_id, project_id)
+
     async with get_db_manager().session() as sess:
+        if project_id:
+            from ml_mcp.domain.errors import ResourceNotFoundError
+            from ml_mcp.infrastructure.postgres.repositories.projects import ProjectRepository
+
+            proj_repo = ProjectRepository(sess)
+            proj = await proj_repo.get_project(principal.tenant_id, project_id)
+            if not proj:
+                raise ResourceNotFoundError("Project", project_id)
+
         service = ExperimentService(sess)
         return await service.list_experiments(
             tenant_id=principal.tenant_id,

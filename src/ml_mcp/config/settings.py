@@ -106,6 +106,7 @@ class WorkerSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="WORKER_", extra="ignore")
 
+    in_process: bool = True
     max_concurrent_experiments: int = 4
     default_timeout_seconds: int = 1800
     max_memory_mb: int = 4096

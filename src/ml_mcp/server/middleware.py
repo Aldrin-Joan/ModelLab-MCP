@@ -3,6 +3,7 @@
 import logging
 from typing import Any
 
+from ml_mcp.config import get_settings
 from ml_mcp.domain.errors import ResourceLimitExceededError
 from ml_mcp.domain.policies import (
     TOOL_POLICIES,
@@ -58,11 +59,12 @@ class SecurityPipeline:
         principal.enforce_permission(policy.required_scope)
 
         # 3. Rate limiting enforcement
+        settings = get_settings()
         limits_map = {
-            "read": 120,
-            "metadata": 60,
-            "experiment": 10,
-            "analysis": 20,
+            "read": settings.rate_limit.read_per_minute,
+            "metadata": settings.rate_limit.metadata_per_minute,
+            "experiment": settings.rate_limit.experiment_per_minute,
+            "analysis": settings.rate_limit.analysis_per_minute,
         }
         limit = limits_map.get(policy.rate_limit_category, 60)
         res = await self.rate_limiter.check_rate_limit(

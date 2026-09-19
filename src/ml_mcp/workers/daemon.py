@@ -23,10 +23,12 @@ class WorkerDaemon:
         task_queue: RedisTaskQueue | None = None,
         storage_service: S3StorageService | None = None,
         db_manager: DatabaseManager | None = None,
+        drain_outbox: bool = False,
     ) -> None:
         self.queue = task_queue or RedisTaskQueue()
         self.storage = storage_service or get_storage_service()
         self.db_mgr = db_manager or get_db_manager()
+        self.drain_outbox = drain_outbox
         self._stop_event = asyncio.Event()
         self._running = False
 
@@ -42,6 +44,18 @@ class WorkerDaemon:
 
         while not self._stop_event.is_set():
             try:
+                # 1. Drain pending outbox events into Redis queue if enabled
+                if self.drain_outbox:
+                    try:
+                        async with self.db_mgr.session() as session:
+                            from ml_mcp.infrastructure.queue.outbox_processor import OutboxProcessor
+
+                            processor = OutboxProcessor(session, self.queue)
+                            await processor.process_batch(limit=20)
+                    except Exception as outbox_exc:
+                        logger.debug("Outbox drain cycle check: %s", outbox_exc)
+
+                # 2. Dequeue experiment task
                 task_message = await self.queue.dequeue(timeout_seconds=2)
                 if task_message is None:
                     continue

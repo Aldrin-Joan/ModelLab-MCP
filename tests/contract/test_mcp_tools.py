@@ -26,10 +26,14 @@ async def setup_db():
     async with db_mgr.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Seed model catalog
+    # Seed model catalog & default project
     async with db_mgr.session() as sess:
         service = ModelService(sess)
         await service.seed_catalog()
+        from ml_mcp.application.projects.service import ProjectService
+
+        proj_service = ProjectService(sess)
+        await proj_service.ensure_default_project("tenant-alpha")
 
     # Set admin principal for tool contract tests
     principal = Principal(
@@ -59,13 +63,15 @@ def extract_result(tool_res):
 
 @pytest.mark.asyncio
 async def test_tool_catalog_contract():
-    """Verify all 21 tools are registered with valid schemas and descriptions."""
+    """Verify all 23 tools are registered with valid schemas and descriptions."""
     server = create_server()
     tools = await server.list_tools()
-    assert len(tools) == 21
+    assert len(tools) == 23
 
     tool_names = {t.name for t in tools}
     expected_tools = {
+        "create_project",
+        "list_projects",
         "list_models",
         "get_model",
         "list_model_versions",
@@ -97,6 +103,26 @@ async def test_tool_catalog_contract():
 
 
 @pytest.mark.asyncio
+async def test_project_lifecycle_tools():
+    """Verify create_project and list_projects via call_tool."""
+    server = create_server()
+    create_res = await server.call_tool(
+        "create_project",
+        {"name": "test-project-alpha", "description": "Test project for contract testing"},
+    )
+    assert not create_res.is_error
+    created = extract_result(create_res)
+    assert created["name"] == "test-project-alpha"
+    assert "project_id" in created
+
+    list_res = await server.call_tool("list_projects", {})
+    assert not list_res.is_error
+    projects = extract_result(list_res)
+    assert len(projects) >= 1
+    assert any(p["name"] == "test-project-alpha" for p in projects)
+
+
+@pytest.mark.asyncio
 async def test_model_discovery_tools():
     """Verify list_models, get_model, and list_model_versions via call_tool."""
     server = create_server()
@@ -114,17 +140,24 @@ async def test_model_discovery_tools():
     assert xgb_details["name"] == "XGBoost"
     assert len(xgb_details["versions"]) > 0
 
-    # 3. list_model_versions
+    # 3. list_model_versions and verify distinct digests
     res_versions = await server.call_tool("list_model_versions", {"model_id": "random_forest"})
     assert not res_versions.is_error
     versions = extract_result(res_versions)
     assert len(versions) >= 1
     assert versions[0]["version"] == "1.0.0"
 
+    res_lr = await server.call_tool("list_model_versions", {"model_id": "logistic_regression"})
+    assert not res_lr.is_error
+    lr_versions = extract_result(res_lr)
+    assert lr_versions[0]["container_image_digest"] != versions[0]["container_image_digest"]
+
 
 @pytest.mark.asyncio
 async def test_dataset_lifecycle_tools():
     """Verify validate_dataset, register_dataset, and inspect_dataset via call_tool."""
+    from fastmcp.exceptions import ToolError
+
     server = create_server()
 
     csv_data = "feat1,feat2,label\n1.0,2.0,0\n3.0,4.0,1\n5.0,6.0,0\n7.0,8.0,1\n"
@@ -137,11 +170,19 @@ async def test_dataset_lifecycle_tools():
     assert val_payload["row_count"] == 4
     assert val_payload["column_count"] == 3
 
+    # 1b. validate_dataset with malformed base64
+    with pytest.raises(ToolError):
+        await server.call_tool("validate_dataset", {"format": "csv", "data_base64": "not-valid-base64!!!"})
+
+    # Create project first
+    proj_res = await server.call_tool("create_project", {"name": "Churn Project"})
+    proj_id = extract_result(proj_res)["project_id"]
+
     # 2. register_dataset
     reg_res = await server.call_tool(
         "register_dataset",
         {
-            "project_id": "project-1",
+            "project_id": proj_id,
             "name": "churn_data",
             "description": "Customer churn dataset",
             "format": "csv",
@@ -153,6 +194,7 @@ async def test_dataset_lifecycle_tools():
     reg_payload = extract_result(reg_res)
     assert reg_payload["dataset_id"] is not None
     assert reg_payload["version_id"] is not None
+    assert reg_payload["format"] == "csv"
     dataset_id = reg_payload["dataset_id"]
 
     # 3. inspect_dataset
@@ -176,13 +218,17 @@ async def test_experiment_creation_and_listing_tools():
     """Verify create_experiment, get_experiment, list_experiments, and cancel_experiment."""
     server = create_server()
 
+    # Create project first
+    proj_res = await server.call_tool("create_project", {"name": "Exp Project"})
+    proj_id = extract_result(proj_res)["project_id"]
+
     # First register dataset
     csv_data = "x1,x2,y\n1.0,2.0,0\n3.0,4.0,1\n5.0,6.0,0\n7.0,8.0,1\n9.0,10.0,0\n"
     csv_b64 = base64.b64encode(csv_data.encode("utf-8")).decode("ascii")
     reg_res = await server.call_tool(
         "register_dataset",
         {
-            "project_id": "proj-exp",
+            "project_id": proj_id,
             "name": "exp_dataset",
             "description": "Dataset for experiment creation",
             "format": "csv",
@@ -201,7 +247,7 @@ async def test_experiment_creation_and_listing_tools():
     exp_res = await server.call_tool(
         "create_experiment",
         {
-            "project_id": "proj-exp",
+            "project_id": proj_id,
             "dataset_version_id": dataset_version_id,
             "model_version_id": model_version_id,
             "task_type": "binary_classification",
@@ -221,7 +267,7 @@ async def test_experiment_creation_and_listing_tools():
     assert extract_result(get_res)["status"] == "QUEUED"
 
     # 3. list_experiments
-    list_res = await server.call_tool("list_experiments", {"project_id": "proj-exp"})
+    list_res = await server.call_tool("list_experiments", {"project_id": proj_id})
     assert not list_res.is_error
     experiments = extract_result(list_res)
     assert len(experiments) >= 1

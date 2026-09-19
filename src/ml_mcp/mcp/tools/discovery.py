@@ -33,7 +33,21 @@ async def handle_list_datasets(
     principal: Principal, project_id: str | None = None
 ) -> list[dict[str, Any]]:
     principal.enforce_permission(Scope.DATASETS_READ)
+    if project_id:
+        from ml_mcp.domain.policies import validate_tenant_access
+
+        validate_tenant_access(principal, principal.tenant_id, project_id)
+
     async with get_db_manager().session() as sess:
+        if project_id:
+            from ml_mcp.domain.errors import ResourceNotFoundError
+            from ml_mcp.infrastructure.postgres.repositories.projects import ProjectRepository
+
+            proj_repo = ProjectRepository(sess)
+            proj = await proj_repo.get_project(principal.tenant_id, project_id)
+            if not proj:
+                raise ResourceNotFoundError("Project", project_id)
+
         service = DatasetService(sess)
         return await service.list_datasets(principal.tenant_id, project_id)
 

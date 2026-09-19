@@ -1,175 +1,242 @@
-# Task List: Agentic ML MCP Server (ModelLab)
+# Task List: Test Report Remediation & Downstream Verification
 
-<!-- Tracking file for agent tasks according to planning-and-task-breakdown skill -->
+## Task 1: Add PROJECTS_READ and PROJECTS_WRITE Scopes to RBAC Matrix
+**Description:** Update `src/ml_mcp/domain/policies/rbac.py` to add `PROJECTS_READ` and `PROJECTS_WRITE` scopes to `Scope(StrEnum)` and map them into the role permission sets for `Role.VIEWER` (read), `Role.RESEARCHER` (read/write), `Role.OPERATOR` (read/write), and `Role.ADMIN` (all).
 
-## Phase 1: Project Scaffolding, Tooling & Configuration
-- [x] **Task 1.1**: Project Baseline & Dependency Management
-  - Files: `pyproject.toml`, `README.md`, `.gitignore`
-  - Verification: `conda run -n ML_LLM python -c "import fastmcp, pydantic, sqlalchemy; print('OK')"`
-- [x] **Task 1.2**: Centralized Application Configuration & Settings
-  - Files: `src/ml_mcp/config/__init__.py`, `src/ml_mcp/config/settings.py`, `tests/unit/test_settings.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_settings.py`
-- [x] **Task 1.3**: Telemetry, Structured Logging & Local Infrastructure Setup
-  - Files: `src/ml_mcp/infrastructure/telemetry/logging.py`, `src/ml_mcp/infrastructure/telemetry/otel.py`, `docker-compose.yml`, `tests/unit/test_logging.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_logging.py`
+**Acceptance criteria:**
+- [x] `Scope.PROJECTS_READ` ("ml:projects:read") and `Scope.PROJECTS_WRITE` ("ml:projects:write") are defined.
+- [x] Roles have appropriate project scopes assigned in `ROLE_PERMISSIONS`.
 
-### Checkpoint 1: Scaffolding & Infrastructure
-- [x] All Phase 1 tests pass
-- [x] Docker services launch cleanly
-- [x] Stderr logging verified
+**Verification:**
+- [x] Tests pass: `pytest tests/unit/domain/test_policies.py` or equivalent.
 
-## Phase 2: Domain Modeling, Policies & Error Handling
-- [x] **Task 2.1**: Domain Errors & Stable Error Codes
-  - Files: `src/ml_mcp/domain/errors/base.py`, `src/ml_mcp/domain/errors/codes.py`, `tests/unit/test_errors.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_errors.py`
-- [x] **Task 2.2**: Value Objects & Experiment Specifications
-  - Files: `src/ml_mcp/domain/value_objects/experiment.py`, `src/ml_mcp/domain/value_objects/dataset.py`, `src/ml_mcp/domain/value_objects/model.py`, `tests/unit/test_value_objects.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_value_objects.py`
-- [x] **Task 2.3**: Security Policies, RBAC Matrix & Tool Classification
-  - Files: `src/ml_mcp/domain/policies/rbac.py`, `src/ml_mcp/domain/policies/tool_policy.py`, `src/ml_mcp/domain/policies/tenant_isolation.py`, `tests/unit/test_policies.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_policies.py`
+**Dependencies:** None
+**Files likely touched:**
+- `src/ml_mcp/domain/policies/rbac.py`
+**Estimated scope:** Small (1 file)
 
-### Checkpoint 2: Domain Layer
-- [x] All domain value objects enforce business rules
-- [x] Policy engine passes 100% of RBAC and tenant tests
+---
 
-## Phase 3: Database & Persistence Infrastructure
-- [x] **Task 3.1**: Async SQLAlchemy 2 ORM Models
-  - Files: `src/ml_mcp/infrastructure/postgres/base.py`, `src/ml_mcp/infrastructure/postgres/models.py`, `tests/unit/test_orm_models.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_orm_models.py`
-- [x] **Task 3.2**: Database Engine, Session Factory & Alembic Migrations
-  - Files: `src/ml_mcp/infrastructure/postgres/session.py`, `alembic.ini`, `alembic/env.py`, `alembic/versions/001_initial_schema.py`
-  - Verification: `conda run -n ML_LLM alembic upgrade head`
-- [x] **Task 3.3**: Repository Implementations
-  - Files: `src/ml_mcp/infrastructure/postgres/repositories/*.py`, `tests/integration/test_repositories.py`
-  - Verification: `conda run -n ML_LLM pytest tests/integration/test_repositories.py`
+## Task 2: Implement ProjectRepository
+**Description:** Implement `ProjectRepository` in `src/ml_mcp/infrastructure/postgres/repositories/projects.py` to handle project querying, creation, listing with pagination, and `get_or_create_default_project` for a tenant.
 
-### Checkpoint 3: Persistence Layer
-- [x] Alembic migrations run cleanly up/down
-- [x] Repositories pass integration tests with PostgreSQL
+**Acceptance criteria:**
+- [x] `get_project(tenant_id: str, project_id: str) -> ProjectOrm | None` retrieves project belonging to tenant.
+- [x] `create_project(project: ProjectOrm) -> ProjectOrm` persists new project.
+- [x] `list_projects(tenant_id: str, limit: int = 50, offset: int = 0) -> list[ProjectOrm]` lists tenant projects.
+- [x] `get_or_create_default_project(tenant_id: str) -> ProjectOrm` guarantees existence of default project.
 
-## Phase 4: Object Storage & Data Processing Engine
-- [x] **Task 4.1**: S3-Compatible Storage Adapter & Presigned URLs
-  - Files: `src/ml_mcp/infrastructure/object_storage/s3.py`, `tests/unit/test_object_storage.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_object_storage.py`
-- [x] **Task 4.2**: Dataset Validation, Schema Extraction & Ingestion
-  - Files: `src/ml_mcp/application/datasets/service.py`, `src/ml_mcp/application/datasets/validator.py`, `tests/unit/test_dataset_service.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_dataset_service.py`
-- [x] **Task 4.3**: Model Catalog Application Service
-  - Files: `src/ml_mcp/application/models/service.py`, `src/ml_mcp/application/models/catalog_seed.py`, `tests/unit/test_model_service.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_model_service.py`
+**Verification:**
+- [x] Tests pass: `pytest tests/integration/test_repositories.py`
 
-### Checkpoint 4: Storage & Catalog
-- [x] S3 storage and presigned URLs verified
-- [x] Dataset validation rejects unsafe/malformed files
-- [x] Model catalog enforces approval constraints
+**Dependencies:** Task 1
+**Files likely touched:**
+- `src/ml_mcp/infrastructure/postgres/repositories/projects.py`
+- `src/ml_mcp/infrastructure/postgres/repositories/__init__.py`
+**Estimated scope:** Small (2 files)
 
-## Phase 5: Redis Infrastructure, Rate Limiting & Outbox Queue
-- [x] **Task 5.1**: Redis Client & Sliding-Window Rate Limiter
-  - Files: `src/ml_mcp/infrastructure/redis/client.py`, `src/ml_mcp/infrastructure/redis/rate_limiter.py`, `tests/integration/test_rate_limiter.py`
-  - Verification: `conda run -n ML_LLM pytest tests/integration/test_rate_limiter.py`
-- [x] **Task 5.2**: Durable Outbox Processor & Task Queue
-  - Files: `src/ml_mcp/infrastructure/queue/task_queue.py`, `src/ml_mcp/infrastructure/queue/outbox_processor.py`, `tests/integration/test_outbox_queue.py`
-  - Verification: `conda run -n ML_LLM pytest tests/integration/test_outbox_queue.py`
+---
 
-### Checkpoint 5: Rate Limiting & Outbox
-- [x] Rate limiter blocks traffic over limits
-- [x] Outbox processor ensures reliable message transfer to queue
+## Task 3: Implement ProjectService
+**Description:** Implement `ProjectService` in `src/ml_mcp/application/projects/service.py` to coordinate project operations, return clean dictionary payloads, and support ensuring the default project during server startup.
 
-## Phase 6: Tabular ML Execution Worker Engine
-- [x] **Task 6.1**: ML Feature Preprocessing & Split Pipeline
-  - Files: `src/ml_mcp/workers/preprocessing.py`, `tests/unit/test_preprocessing.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_preprocessing.py`
-- [x] **Task 6.2**: Model Trainers & Evaluation Engine
-  - Files: `src/ml_mcp/workers/trainers/*.py`, `src/ml_mcp/workers/metrics.py`, `tests/unit/test_trainers.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_trainers.py`
-- [x] **Task 6.3**: Worker Orchestrator & Execution Isolation Boundary
-  - Files: `src/ml_mcp/workers/runner.py`, `src/ml_mcp/workers/sandbox.py`, `tests/integration/test_worker_runner.py`
-  - Verification: `conda run -n ML_LLM pytest tests/integration/test_worker_runner.py`
+**Acceptance criteria:**
+- [x] `create_project(tenant_id: str, name: str, description: str = "") -> dict[str, Any]` creates and returns project.
+- [x] `list_projects(tenant_id: str, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]` returns paginated project list.
+- [x] `get_project(tenant_id: str, project_id: str) -> dict[str, Any]` retrieves project or raises `ResourceNotFoundError`.
+- [x] `ensure_default_project(tenant_id: str) -> dict[str, Any]` seeds `default-project` ("Default Project") if not present.
 
-### Checkpoint 6: ML Worker Engine
-- [x] All 7 tabular models train and output metrics
-- [x] Zero data leakage during preprocessing
-- [x] Worker runner catches timeouts and updates status
+**Verification:**
+- [x] Tests pass: Service unit tests.
 
-## Phase 7: Structured Analysis Engine
-- [x] **Task 7.1**: Statistical Analysis, Overfitting & Leakage Detection
-  - Files: `src/ml_mcp/application/analysis/service.py`, `src/ml_mcp/application/analysis/diagnostics.py`, `tests/unit/test_analysis_service.py`
-  - Verification: `conda run -n ML_LLM pytest tests/unit/test_analysis_service.py`
+**Dependencies:** Task 2
+**Files likely touched:**
+- `src/ml_mcp/application/projects/service.py`
+- `src/ml_mcp/application/projects/__init__.py`
+**Estimated scope:** Small (2 files)
 
-### Checkpoint 7: Analysis Engine
-- [x] Diagnostic engine correctly flags overfitting and leakage
-- [x] Outputs formatted strictly to specification
+---
 
-## Phase 8: FastMCP Protocol Adapter, Transports & Security Pipeline
-- [x] **Task 8.1**: Authentication & JWT Validation Module
-  - Files: `src/ml_mcp/server/auth.py`, `tests/unit/test_auth.py`
-  - Verification: `pytest tests/unit/test_auth.py`
-- [x] **Task 8.2**: FastMCP Schemas & Tool Implementations (all 21 tools)
-  - Files: `src/ml_mcp/mcp/schemas/tools.py`, `src/ml_mcp/mcp/tools/*.py`, `tests/contract/test_mcp_tools.py`
-  - Verification: `pytest tests/contract/test_mcp_tools.py`
-- [x] **Task 8.3**: FastMCP Resources, Prompts & Server Factory
-  - Files: `src/ml_mcp/mcp/resources.py`, `src/ml_mcp/mcp/prompts.py`, `src/ml_mcp/server/app.py`, `tests/contract/test_mcp_tools.py`
-  - Verification: `pytest tests/contract/test_mcp_tools.py`
-- [x] **Task 8.4**: Transports (STDIO & Streamable HTTP) & Health Endpoints
-  - Files: `src/ml_mcp/server/stdio.py`, `src/ml_mcp/server/http.py`, `src/ml_mcp/server/middleware.py`, `tests/unit/test_transports.py`
-  - Verification: `pytest tests/unit/test_transports.py`
+## Checkpoint 1: Foundation (Tasks 1-3)
+- [x] RBAC policy, ProjectRepository, and ProjectService are implemented and tested.
 
-### Checkpoint 8: FastMCP Transports
-- [x] STDIO transport leaves stdout uncontaminated
-- [x] Streamable HTTP authenticates and serves health probes
+---
 
-## Phase 9: Comprehensive Security, Contract & E2E Verification
-- [x] **Task 9.1**: Security Test Matrix Implementation
-  - Files: `tests/security/test_security_matrix.py`
-  - Verification: `pytest tests/security/test_security_matrix.py`
-- [x] **Task 9.2**: End-to-End Experimentation Lifecycle Test
-  - Files: `tests/e2e/test_full_lifecycle.py`
-  - Verification: `pytest tests/e2e/test_full_lifecycle.py`
+## Task 4: Fix Hardcoded Dataset Format in DatasetService
+**Description:** In `src/ml_mcp/application/datasets/service.py`, fix `register_dataset` where `format="parquet"` is hardcoded. Ensure the caller's `data_format` (e.g. `"csv"`, `"jsonl"`, `"parquet"`) is normalized and preserved in `DatasetOrm(format=fmt)`.
 
-### Checkpoint 9: Security & Verification
-- [x] All 15+ security test vectors pass
-- [x] Complete E2E experiment lifecycle passes green
+**Acceptance criteria:**
+- [x] `DatasetOrm(format=fmt)` stores the actual input data format instead of hardcoded `"parquet"`.
+- [x] Tested with `"csv"` format: database record reflects `"csv"`.
 
-## Phase 10: Containerization, CI/CD & Deployment Artifacts
-- [x] **Task 10.1**: Multi-Stage Production Dockerfiles
-  - Files: `Dockerfile`, `.gitignore`
-  - Verification: Multi-stage targets `ml-mcp-api` and `ml-worker-tabular-cpu`
-- [x] **Task 10.2**: GitHub Actions CI Pipeline & Documentation
-  - Files: `.github/workflows/ci.yml`, `Docs/Operational-Guide.md`
-  - Verification: Ruff linting, test suite, and operational runbooks
+**Verification:**
+- [x] Tests pass: `pytest tests/contract/test_mcp_tools.py`
 
-### Checkpoint 10: Production Readiness Complete
-- [x] Production Docker containers defined and validated
-- [x] CI pipeline ready for deployment
-- [x] 75 of 75 tests passing green across entire repo
+**Dependencies:** None
+**Files likely touched:**
+- `src/ml_mcp/application/datasets/service.py`
+**Estimated scope:** Small (1 file)
 
-## Phase 11: Production Remediation (CRIT & REQ Fixes)
-- [x] **Task 11.1**: Worker Consumer Daemon & Non-Blocking Execution (CRIT-01, REQ-06)
-  - Files: `src/ml_mcp/workers/daemon.py`, `src/ml_mcp/workers/runner.py`, `Dockerfile`
-  - Verification: `pytest tests/integration/test_worker_runner.py` & daemon loop verification
-- [x] **Task 11.2**: Storage Hardening: Private S3 Bucket & Path Traversal Sanitization (CRIT-02, REQ-03)
-  - Files: `docker-compose.yml`, `src/ml_mcp/infrastructure/object_storage/s3.py`, `src/ml_mcp/server/http.py`
-  - Verification: `pytest tests/unit/test_object_storage.py` & traversal attack test
-- [x] **Task 11.3**: Application Layer Extraction & Model Approval Enforcement (CRIT-03, CRIT-04, REQ-05)
-  - Files: `src/ml_mcp/application/experiments/service.py`, `src/ml_mcp/application/artifacts/service.py`, `src/ml_mcp/mcp/tools/experiments.py`, `src/ml_mcp/mcp/tools/results.py`, `src/ml_mcp/infrastructure/postgres/repositories/experiments.py`
-  - Verification: `pytest tests/contract/test_mcp_tools.py tests/unit/test_model_service.py`
-- [x] **Task 11.4**: OAuth 2.1 Scope Attenuation & JWT Algorithm Pinning (REQ-01, REQ-02)
-  - Files: `src/ml_mcp/domain/policies/rbac.py`, `src/ml_mcp/server/auth.py`, `src/ml_mcp/server/context.py`
-  - Verification: `pytest tests/security/test_security_matrix.py tests/unit/test_auth.py`
-- [x] **Task 11.5**: Anti-Enumeration & Atomic Rate Limiter (REQ-04, REQ-07)
-  - Files: `src/ml_mcp/domain/policies/tenant_isolation.py`, `src/ml_mcp/mcp/tools/results.py`, `src/ml_mcp/infrastructure/redis/rate_limiter.py`
-  - Verification: `pytest tests/security/test_security_matrix.py tests/integration/test_rate_limiter.py`
-- [x] **Task 11.6**: Test Suite Hermeticity, Conftest & Negative Tests (QA Audit)
-  - Files: `tests/conftest.py`, `tests/unit/test_dataset_negative.py`, `tests/unit/test_dataset_service.py`
-  - Verification: `pytest tests/`
-- [x] **Task 11.7**: Code Hygiene & Full Verification
-  - Files: Entire repository
-  - Verification: `ruff check src/ tests/`, `ruff format --check src/ tests/`, `pytest tests/`
+---
 
-### Checkpoint 11: Production Certification Complete
-- [x] All 3 Critical and 7 Required findings remediated
-- [x] Centralized tests/conftest.py prevents all state leakage
-- [x] Ruff reports 0 errors and 0 formatting issues
-- [x] 100% test pass rate on full regression suite
+## Task 5: Harden Base64 Decoding & Malformed Input Handling
+**Description:** In `src/ml_mcp/mcp/tools/datasets.py`, use `base64.b64decode(data_base64, validate=True)` and catch `binascii.Error`, raising `InvalidInputError("Invalid base64 payload")`. In `src/ml_mcp/application/datasets/validator.py`, ensure truncated CSV/JSONL or malformed encoding is consistently detected and rejected with `DatasetValidationError`.
 
+**Acceptance criteria:**
+- [x] Malformed or truncated base64 strings raise `InvalidInputError`.
+- [x] Malformed/corrupted tabular payloads raise `DatasetValidationError`.
+
+**Verification:**
+- [x] Tests pass: Unit/contract tests with malformed inputs.
+
+**Dependencies:** None
+**Files likely touched:**
+- `src/ml_mcp/mcp/tools/datasets.py`
+- `src/ml_mcp/application/datasets/validator.py`
+**Estimated scope:** Small (2 files)
+
+---
+
+## Task 6: Assign Distinct Container Image Digests per Model Family
+**Description:** In `src/ml_mcp/application/models/catalog_seed.py`, replace the shared duplicate container digest `sha256:7f83b1657ff1...` with distinct, deterministic SHA-256 digests for each of the 7 approved models.
+
+**Acceptance criteria:**
+- [x] Each of the 7 models has a unique, valid 64-hex-character SHA-256 container image digest.
+- [x] No two models share the same image digest.
+
+**Verification:**
+- [x] Tests pass: `pytest tests/contract/test_mcp_tools.py`
+
+**Dependencies:** None
+**Files likely touched:**
+- `src/ml_mcp/application/models/catalog_seed.py`
+**Estimated scope:** Small (1 file)
+
+---
+
+## Checkpoint 2: Service Layer (Tasks 4-6)
+- [x] Dataset format is preserved on registration.
+- [x] Malformed base64 is caught and cleanly reported.
+- [x] All 7 models have distinct image digests.
+
+---
+
+## Task 7: Implement Project MCP Tool Handlers
+**Description:** In `src/ml_mcp/mcp/tools/projects.py`, implement `handle_create_project` and `handle_list_projects` with RBAC enforcement (`Scope.PROJECTS_WRITE`, `Scope.PROJECTS_READ`).
+
+**Acceptance criteria:**
+- [x] `handle_create_project` enforces `PROJECTS_WRITE` and calls `ProjectService.create_project`.
+- [x] `handle_list_projects` enforces `PROJECTS_READ` and calls `ProjectService.list_projects`.
+
+**Verification:**
+- [x] Tests pass: Tool invocation tests.
+
+**Dependencies:** Task 1, Task 3
+**Files likely touched:**
+- `src/ml_mcp/mcp/tools/projects.py`
+- `src/ml_mcp/mcp/tools/__init__.py`
+**Estimated scope:** Small (2 files)
+
+---
+
+## Task 8: Enforce Consistent Project Validation in Experiments Tools
+**Description:** In `src/ml_mcp/mcp/tools/experiments.py`, update `handle_list_experiments` to validate that when `project_id` is supplied, the project exists for the tenant (or raise `ResourceNotFoundError`).
+
+**Acceptance criteria:**
+- [x] Supplying a non-existent `project_id` to `list_experiments` raises `ResourceNotFoundError`.
+
+**Verification:**
+- [x] Tests pass: `pytest tests/contract/test_mcp_tools.py`
+
+**Dependencies:** Task 2
+**Files likely touched:**
+- `src/ml_mcp/mcp/tools/experiments.py`
+**Estimated scope:** Small (1 file)
+
+---
+
+## Task 9: Register Tools, Startup Seed, and Sanitize Database Exceptions
+**Description:** In `src/ml_mcp/server/app.py`:
+1. Register `create_project` and `list_projects` tools with descriptions and docstrings (expanding tool catalog from 21 to 23).
+2. In `app_lifespan`, call `ProjectService.ensure_default_project("default-tenant")`.
+3. In `_execute_secured`, intercept SQLAlchemy `IntegrityError` / `DBAPIError` and convert foreign key violations to `ResourceNotFoundError` and uniqueness/constraint failures to `InvalidInputError`, sanitizing raw SQL queries and parameter dumps.
+
+**Acceptance criteria:**
+- [x] `create_server()` registers `create_project` and `list_projects`.
+- [x] Server startup creates `default-project` under `default-tenant`.
+- [x] Foreign key / database integrity errors return sanitized domain errors without leaking SQL or parameters.
+
+**Verification:**
+- [x] Tests pass: Server startup and error handling tests.
+
+**Dependencies:** Task 7, Task 8
+**Files likely touched:**
+- `src/ml_mcp/server/app.py`
+**Estimated scope:** Small (1 file)
+
+---
+
+## Checkpoint 3: Server Layer (Tasks 7-9)
+- [x] All 23 tools are registered.
+- [x] Default project is seeded.
+- [x] SQL leakage is eliminated.
+
+---
+
+## Task 10: Update Contract Tests for 23 Tools & Project Tools
+**Description:** In `tests/contract/test_mcp_tools.py`, update `test_tool_catalog_contract` to expect 23 tools including `create_project` and `list_projects`. Add tests for `create_project` and `list_projects`, and assert that `register_dataset` preserves the specified format in the returned schema/ORM.
+
+**Acceptance criteria:**
+- [x] `test_tool_catalog_contract` passes with 23 tools.
+- [x] `create_project` and `list_projects` are tested via `server.call_tool`.
+- [x] Dataset format is asserted to be `"csv"`.
+
+**Verification:**
+- [x] Tests pass: `pytest tests/contract/test_mcp_tools.py`
+
+**Dependencies:** Task 9
+**Files likely touched:**
+- `tests/contract/test_mcp_tools.py`
+**Estimated scope:** Small (1 file)
+
+---
+
+## Task 11: End-to-End Downstream Verification Test Suite
+**Description:** Create `tests/integration/test_test_report_remediation.py` testing against real PostgreSQL database:
+1. Creating a project and listing projects.
+2. Using default seeded project `default-project`.
+3. Registering CSV dataset and verifying format is `"csv"`.
+4. Testing all 8 downstream tools that were previously blocked in the report:
+   - `create_experiment`
+   - `list_experiment_artifacts`
+   - `read_experiment_artifact`
+   - `analyze_experiment`
+   - `analyze_model_errors`
+   - `get_experiment_predictions`
+   - `check_experiment_validity`
+   - `list_dataset_versions`
+5. Verifying information disclosure fix (non-existent project_id returns sanitized `ResourceNotFoundError`, zero raw SQL leaked).
+6. Verifying distinct container image digests across model families.
+7. Verifying malformed base64 handling in `validate_dataset`.
+
+**Acceptance criteria:**
+- [x] All 8 downstream tools execute successfully.
+- [x] Information disclosure is prevented.
+- [x] 100% tests pass.
+
+**Verification:**
+- [x] Tests pass: `pytest tests/integration/test_test_report_remediation.py`
+- [x] Full suite pass: `pytest tests/` (101/101 passed)
+- [x] Linter pass: `ruff check src tests` (All checks passed)
+
+**Dependencies:** Task 10
+**Files likely touched:**
+- `tests/integration/test_test_report_remediation.py`
+**Estimated scope:** Medium (1-2 files)
+
+---
+
+## Checkpoint 4: Complete Verification
+- [x] 100% of tests pass across contract and integration suites (101/101 passed).
+- [x] Ruff check passes with 0 errors.
+- [x] All 6 issues from the test report are fully resolved and verified.

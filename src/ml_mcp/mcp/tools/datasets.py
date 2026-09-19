@@ -1,11 +1,22 @@
-"""Dataset MCP tool handlers."""
-
 import base64
+import binascii
 from typing import Any
 
 from ml_mcp.application.datasets.service import DatasetService
+from ml_mcp.domain.errors import InvalidInputError
 from ml_mcp.domain.policies import Principal, Scope, validate_tenant_access
 from ml_mcp.infrastructure.postgres.session import get_db_manager
+
+
+def _safe_b64decode(data_base64: str) -> bytes:
+    """Safely decode base64 payload with strict validation."""
+    clean_b64 = data_base64.strip()
+    if not clean_b64:
+        raise InvalidInputError("Dataset payload is empty.")
+    try:
+        return base64.b64decode(clean_b64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise InvalidInputError(f"Invalid base64 payload: {exc}") from exc
 
 
 async def handle_register_dataset(
@@ -20,8 +31,16 @@ async def handle_register_dataset(
     principal.enforce_permission(Scope.DATASETS_WRITE)
     validate_tenant_access(principal, principal.tenant_id, project_id)
 
-    raw_bytes = base64.b64decode(data_base64)
+    raw_bytes = _safe_b64decode(data_base64)
     async with get_db_manager().session() as sess:
+        from ml_mcp.domain.errors import ResourceNotFoundError
+        from ml_mcp.infrastructure.postgres.repositories.projects import ProjectRepository
+
+        proj_repo = ProjectRepository(sess)
+        proj = await proj_repo.get_project(principal.tenant_id, project_id)
+        if not proj:
+            raise ResourceNotFoundError("Project", project_id)
+
         service = DatasetService(sess)
         return await service.register_dataset(
             tenant_id=principal.tenant_id,
@@ -40,7 +59,7 @@ async def handle_validate_dataset(
     principal: Principal,
 ) -> dict[str, Any]:
     principal.enforce_permission(Scope.DATASETS_READ)
-    raw_bytes = base64.b64decode(data_base64)
+    raw_bytes = _safe_b64decode(data_base64)
     async with get_db_manager().session() as sess:
         service = DatasetService(sess)
         return await service.validate_only(raw_bytes, format)

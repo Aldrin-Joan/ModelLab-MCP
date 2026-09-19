@@ -143,3 +143,13 @@ class DependencyUnavailableError(DomainError):
             details={"dependency": dependency},
             status_code=503,
         )
+
+
+class InvalidInputError(DomainError):
+    def __init__(self, message: str = "Invalid input provided", details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            ErrorCode.INVALID_INPUT,
+            message,
+            details=details,
+            status_code=400,
+        )

@@ -7,6 +7,7 @@ from ml_mcp.infrastructure.postgres.repositories.experiments import ExperimentRe
 from ml_mcp.infrastructure.postgres.repositories.metrics import MetricRepository
 from ml_mcp.infrastructure.postgres.repositories.models import ModelRepository
 from ml_mcp.infrastructure.postgres.repositories.outbox import OutboxRepository
+from ml_mcp.infrastructure.postgres.repositories.projects import ProjectRepository
 
 __all__ = [
     "ModelRepository",
@@ -16,4 +17,5 @@ __all__ = [
     "ArtifactRepository",
     "OutboxRepository",
     "AuditRepository",
+    "ProjectRepository",
 ]

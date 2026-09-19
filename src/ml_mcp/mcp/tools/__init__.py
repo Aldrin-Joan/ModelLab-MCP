@@ -24,6 +24,10 @@ from ml_mcp.mcp.tools.experiments import (
     handle_get_experiment,
     handle_list_experiments,
 )
+from ml_mcp.mcp.tools.projects import (
+    handle_create_project,
+    handle_list_projects,
+)
 from ml_mcp.mcp.tools.results import (
     handle_compare_experiments,
     handle_get_experiment_metrics,
@@ -33,6 +37,8 @@ from ml_mcp.mcp.tools.results import (
 )
 
 __all__ = [
+    "handle_create_project",
+    "handle_list_projects",
     "handle_list_models",
     "handle_get_model",
     "handle_list_model_versions",

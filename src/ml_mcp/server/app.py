@@ -4,6 +4,7 @@ Assembles all 21 ML experimentation control plane tools, resources, and prompts
 into a production-grade FastMCP 4 server instance.
 """
 
+import asyncio
 import contextlib
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -41,6 +42,10 @@ from ml_mcp.mcp.tools.experiments import (
     handle_get_experiment,
     handle_list_experiments,
 )
+from ml_mcp.mcp.tools.projects import (
+    handle_create_project,
+    handle_list_projects,
+)
 from ml_mcp.mcp.tools.results import (
     handle_compare_experiments,
     handle_get_experiment_metrics,
@@ -76,25 +81,68 @@ async def _execute_secured[T](
             success=False,
             error_code=type(exc).__name__,
         )
+        from sqlalchemy.exc import DBAPIError, IntegrityError
+
+        from ml_mcp.domain.errors import InvalidInputError, ResourceNotFoundError
+
+        if isinstance(exc, IntegrityError):
+            orig_msg = str(getattr(exc, "orig", exc)).lower()
+            if "foreign key constraint" in orig_msg:
+                if "project_id" in orig_msg or "projects" in orig_msg:
+                    raise ResourceNotFoundError("Project", "specified in request") from None
+                if "dataset_id" in orig_msg or "dataset_version_id" in orig_msg:
+                    raise ResourceNotFoundError("Dataset", "specified in request") from None
+                if "model_id" in orig_msg or "model_version_id" in orig_msg:
+                    raise ResourceNotFoundError("Model", "specified in request") from None
+                raise ResourceNotFoundError("Referenced resource", "specified in request") from None
+            if "unique constraint" in orig_msg:
+                raise InvalidInputError("A resource with this name or identifier already exists.") from None
+            raise InvalidInputError("Database constraint violation.") from None
+        if isinstance(exc, DBAPIError):
+            raise InvalidInputError("Database operation failed due to invalid input.") from None
         raise
 
 
 @contextlib.asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[None]:
-    """Lifespan context manager: seed model catalog and verify database connection."""
+    """Lifespan context manager: seed model catalog, ensure default project, and start in-process worker if configured."""
     logger.info("Initializing ModelLab server lifespan...")
+    worker_task: asyncio.Task[None] | None = None
+    daemon: Any = None
     try:
         from ml_mcp.application.models.service import ModelService
+        from ml_mcp.application.projects.service import ProjectService
+        from ml_mcp.config import get_settings
         from ml_mcp.infrastructure.postgres.session import get_db_manager
 
         async with get_db_manager().session() as sess:
             service = ModelService(sess)
             await service.seed_catalog()
-        logger.info("Model catalog initialized and verified.")
+            proj_service = ProjectService(sess)
+            await proj_service.ensure_default_project("default-tenant")
+        logger.info("Model catalog and default project initialized and verified.")
+
+        settings = get_settings()
+        if settings.app.env != "testing" and getattr(settings.worker, "in_process", True):
+            from ml_mcp.workers.daemon import WorkerDaemon
+
+            daemon = WorkerDaemon(drain_outbox=True)
+            worker_task = asyncio.create_task(daemon.run())
+            logger.info("In-process ML worker daemon started successfully.")
     except Exception as exc:
-        logger.warning("Catalog initialization warning on startup: %s", exc)
-    yield
-    logger.info("Shutting down ModelLab server lifespan.")
+        logger.warning("Startup initialization warning: %s", exc)
+
+    try:
+        yield
+    finally:
+        logger.info("Shutting down ModelLab server lifespan...")
+        if daemon is not None and worker_task is not None:
+            daemon.stop()
+            worker_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await asyncio.wait_for(worker_task, timeout=5.0)
+            logger.info("In-process ML worker daemon stopped.")
+        logger.info("ModelLab server lifespan shutdown complete.")
 
 
 def create_server(name: str = "ModelLab") -> FastMCP:
@@ -109,6 +157,42 @@ def create_server(name: str = "ModelLab") -> FastMCP:
         ),
         lifespan=app_lifespan,
     )
+
+    # -------------------------------------------------------------------------
+    # 0. Project Management Tools
+    # -------------------------------------------------------------------------
+
+    @server.tool(
+        name="create_project",
+        description="Create a new ML experimentation project for organizing datasets and experiments.",
+    )
+    async def create_project(
+        name: str,
+        description: str = "",
+    ) -> dict[str, Any]:
+        """Create a new project."""
+        return await _execute_secured(
+            "create_project",
+            handle_create_project,
+            name=name,
+            description=description,
+        )
+
+    @server.tool(
+        name="list_projects",
+        description="List all ML experimentation projects for the current tenant.",
+    )
+    async def list_projects(
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """List all projects."""
+        return await _execute_secured(
+            "list_projects",
+            handle_list_projects,
+            limit=limit,
+            offset=offset,
+        )
 
     # -------------------------------------------------------------------------
     # 1. Discovery Tools
