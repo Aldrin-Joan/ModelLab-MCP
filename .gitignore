@@ -85,23 +85,23 @@ service-account*.json
 # ============================================================
 
 # Local datasets
-data/
-datasets/
-raw_data/
-processed_data/
-training_data/
-test_data/
+/data/
+/datasets/
+/raw_data/
+/processed_data/
+/training_data/
+/test_data/
 
 # Large ML artifacts
-models/
-checkpoints/
-weights/
-artifacts/
-runs/
-mlruns/
-wandb/
-tensorboard/
-lightning_logs/
+/models/
+/checkpoints/
+/weights/
+/artifacts/
+/runs/
+/mlruns/
+/wandb/
+/tensorboard/
+/lightning_logs/
 
 # Model files
 *.pt
@@ -117,11 +117,11 @@ lightning_logs/
 *.bin
 
 # Experiment outputs
-experiments/
-experiment_outputs/
-predictions/
-evaluation/
-reports/generated/
+/experiments/
+/experiment_outputs/
+/predictions/
+/evaluation/
+/reports/generated/
 
 # Jupyter
 .ipynb_checkpoints/
