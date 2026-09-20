@@ -280,6 +280,120 @@ async def test_experiment_creation_and_listing_tools():
 
 
 @pytest.mark.asyncio
+async def test_create_experiment_column_validation():
+    """Verify create_experiment rejects nonexistent target or feature columns upfront."""
+    from fastmcp.exceptions import ToolError
+
+    server = create_server()
+    proj_res = await server.call_tool("create_project", {"name": "Validation Project"})
+    proj_id = extract_result(proj_res)["project_id"]
+
+    csv_data = "feat1,feat2,label\n1.0,2.0,0\n3.0,4.0,1\n"
+    csv_b64 = base64.b64encode(csv_data.encode("utf-8")).decode("ascii")
+    reg_res = await server.call_tool(
+        "register_dataset",
+        {
+            "project_id": proj_id,
+            "name": "val_dataset",
+            "description": "Validation test dataset",
+            "format": "csv",
+            "data_base64": csv_b64,
+        },
+    )
+    dataset_version_id = extract_result(reg_res)["version_id"]
+
+    res_versions = await server.call_tool(
+        "list_model_versions", {"model_id": "logistic_regression"}
+    )
+    model_version_id = extract_result(res_versions)[0]["version_id"]
+
+    # 1. Nonexistent target column
+    with pytest.raises(ToolError, match="Target column 'nonexistent_target' not found"):
+        await server.call_tool(
+            "create_experiment",
+            {
+                "project_id": proj_id,
+                "dataset_version_id": dataset_version_id,
+                "model_version_id": model_version_id,
+                "task_type": "binary_classification",
+                "target_column": "nonexistent_target",
+            },
+        )
+
+    # 2. Nonexistent feature column
+    with pytest.raises(ToolError, match="Feature columns.*not found"):
+        await server.call_tool(
+            "create_experiment",
+            {
+                "project_id": proj_id,
+                "dataset_version_id": dataset_version_id,
+                "model_version_id": model_version_id,
+                "task_type": "binary_classification",
+                "target_column": "label",
+                "feature_columns": ["feat1", "nonexistent_feat"],
+            },
+        )
+
+    # 3. Target column included in feature columns
+    with pytest.raises(ToolError, match="Target column.*cannot be included in feature_columns"):
+        await server.call_tool(
+            "create_experiment",
+            {
+                "project_id": proj_id,
+                "dataset_version_id": dataset_version_id,
+                "model_version_id": model_version_id,
+                "task_type": "binary_classification",
+                "target_column": "label",
+                "feature_columns": ["feat1", "label"],
+            },
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_experiment_failure_details():
+    """Verify get_experiment surfaces error_message and error_type for failed experiments."""
+    from ml_mcp.infrastructure.postgres.base import generate_uuid7
+    from ml_mcp.infrastructure.postgres.models import ExperimentOrm, ExperimentRunOrm
+    from ml_mcp.infrastructure.postgres.session import get_db_manager
+
+    server = create_server()
+    exp_id = generate_uuid7()
+    run_id = generate_uuid7()
+
+    # Seed an experiment with a failed run directly into DB
+    db_mgr = get_db_manager()
+    async with db_mgr.session() as sess:
+        exp_orm = ExperimentOrm(
+            id=exp_id,
+            tenant_id="tenant-alpha",
+            project_id="default-project",
+            dataset_version_id="mock-dsv-id",
+            model_version_id="mock-mv-id",
+            spec_json={"task_type": "binary_classification"},
+            status="FAILED",
+            created_by="test-user",
+        )
+        run_orm = ExperimentRunOrm(
+            id=run_id,
+            experiment_id=exp_id,
+            run_number=1,
+            status="FAILED",
+            failure_reason="TargetColumnNotFoundError: Target column 'missing' not found in dataset",
+        )
+        sess.add(exp_orm)
+        sess.add(run_orm)
+        await sess.commit()
+
+    get_res = await server.call_tool("get_experiment", {"experiment_id": exp_id})
+    assert not get_res.is_error
+    exp_data = extract_result(get_res)
+    assert exp_data["status"] == "FAILED"
+    assert "Target column 'missing' not found" in exp_data["error_message"]
+    assert exp_data["error_type"] == "TargetColumnNotFoundError"
+
+
+
+@pytest.mark.asyncio
 async def test_mcp_resources():
     """Verify static and parameterized MCP resource reading."""
     server = create_server()

@@ -528,6 +528,18 @@ execution timestamp
 
 An experiment can therefore be reconstructed from immutable references.
 
+### 11.1 Approved Model Families & Metric Reporting Nuances
+
+The platform supports 7 approved tabular model families:
+1. **Logistic Regression** (`logistic_regression`): Regularized linear model with native probability calibration.
+2. **Random Forest** (`random_forest`): Bagging ensemble with tree-based probability distributions.
+3. **XGBoost** (`xgboost`): Gradient boosted decision trees optimized for speed.
+4. **LightGBM** (`lightgbm`): Leaf-wise gradient boosted trees with histogram binning.
+5. **CatBoost** (`catboost`): Symmetrical gradient boosted trees with native categorical handling and non-disk logging (`allow_writing_files=False`).
+6. **Linear SVM** (`linear_svm`): Linear support vector machine (`LinearSVC` / `LinearSVR`). *Note:* `LinearSVC` classifies via hyperplane margin distance rather than probability calibration. Consequently, probability-dependent metrics (`roc_auc`, `pr_auc`, `log_loss`, `brier_score`) are omitted from evaluation metrics and comparison tables for `linear_svm`.
+7. **MLP** (`mlp`): Multi-layer perceptron neural network with softmax/sigmoid probability outputs.
+
+
 ## 12. Execution Boundary
 
 The MCP server never directly imports arbitrary registered model code.

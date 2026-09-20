@@ -36,6 +36,7 @@ class CatBoostTrainer(BaseModelTrainer):
             "learning_rate": hyperparameters.get("learning_rate", 0.1),
             "thread_count": thread_count,
             "verbose": False,
+            "allow_writing_files": False,
         }
 
         if task_type in (TaskType.BINARY_CLASSIFICATION, TaskType.MULTICLASS_CLASSIFICATION):

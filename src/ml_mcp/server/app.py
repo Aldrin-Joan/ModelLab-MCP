@@ -337,7 +337,7 @@ def create_server(name: str = "ModelLab") -> FastMCP:
 
     @server.tool(
         name="get_experiment",
-        description="Get current status, execution logs, and timing of an experiment.",
+        description="Get current status, execution logs, timing, and error details (if failed) of an experiment.",
     )
     async def get_experiment(experiment_id: str) -> dict[str, Any]:
         return await _execute_secured("get_experiment", handle_get_experiment, experiment_id)

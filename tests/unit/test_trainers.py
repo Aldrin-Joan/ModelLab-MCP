@@ -85,3 +85,45 @@ def test_regression_trainers(family: ModelFamily, synthetic_regression_data):
     assert "r2" in result.validation_metrics
     assert "mse" in result.validation_metrics
     assert len(result.model_artifact_bytes) > 0
+
+
+def test_catboost_trainer_categorical_and_no_disk_files(tmp_path, monkeypatch):
+    """Verify CatBoost trains without creating catboost_info directory on disk."""
+    import os
+
+    import pandas as pd
+
+    from ml_mcp.workers.preprocessing import PreprocessingPipeline
+
+    # Change working dir to empty tmp_path to verify no catboost_info is created
+    monkeypatch.chdir(tmp_path)
+
+    df = pd.DataFrame({
+        "num_1": [1.0, 2.5, 3.2, 4.8, 5.1, 6.0, 7.3, 8.9] * 10,
+        "cat_feat": ["A", "B", "C", "A", "B", "C", "A", "B"] * 10,
+        "target": [0, 1, 0, 1, 0, 1, 0, 1] * 10,
+    })
+
+    pipeline = PreprocessingPipeline(
+        target_column="target",
+        task_type=TaskType.BINARY_CLASSIFICATION,
+    )
+    folds = pipeline.fit_transform_folds(df)
+    X_tr, X_val, y_tr, y_val, _ = folds[0]
+
+    trainer = get_trainer(ModelFamily.CATBOOST)
+    result = trainer.train(
+        X_tr=X_tr,
+        y_tr=y_tr,
+        X_val=X_val,
+        y_val=y_val,
+        task_type=TaskType.BINARY_CLASSIFICATION,
+        hyperparameters={"iterations": 10},
+    )
+
+    assert result.val_predictions is not None
+    assert "accuracy" in result.validation_metrics
+    # Verify no catboost_info directory was created anywhere in tmp_path
+    assert not os.path.exists(tmp_path / "catboost_info")
+    assert not os.path.exists("catboost_info")
+
