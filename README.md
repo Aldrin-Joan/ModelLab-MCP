@@ -3,7 +3,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![MCP Protocol](https://img.shields.io/badge/MCP%20Protocol-2026--07--28-orange.svg)](https://modelcontextprotocol.io/)
 [![FastMCP](https://img.shields.io/badge/FastMCP-4.0.5%20GA-green.svg)](https://github.com/jlowin/fastmcp)
-[![Tests](https://img.shields.io/badge/tests-101%20passed%20%7C%20100%25-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-104%20passed%20%7C%20100%25-brightgreen.svg)]()
 [![Code Style](https://img.shields.io/badge/code%20style-ruff-black.svg)](https://github.com/astral-sh/ruff)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Security](https://img.shields.io/badge/security-OAuth%202.1%20%2F%20OIDC-purple.svg)]()
@@ -23,7 +23,7 @@
 - **OAuth 2.1 & Multi-Tenant Security**: Tenant boundary enforcement, RBAC matrix (`Viewer`, `Researcher`, `Operator`, `Admin`), token scope attenuation, and anti-enumeration protections (HTTP 404 instead of 403 on cross-tenant probes).
 - **Transactional Outbox Architecture**: Guarantees zero lost experiment submissions using PostgreSQL transactional Outbox events dispatched to Redis queues.
 - **S3 / MinIO Object Storage**: Immutable tenant-isolated artifact storage with SHA-256 integrity verification, presigned download URLs, and offline memory fallback.
-- **Full Test Coverage**: **101 tests passing (100% green)** across unit, integration, security matrix, MCP contract, and full end-to-end experiment lifecycle.
+- **Full Test Coverage**: **104 tests passing (100% green)** across unit, integration, security matrix, MCP contract, and full end-to-end experiment lifecycle.
 
 ---
 
@@ -120,8 +120,8 @@ ModelLab exposes 23 granular tools across 6 functional categories:
 
 | Tool Name | Parameters | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
-| `create_experiment` | `project_id`, `dataset_version_id`, `model_version_id`, `task_type`, `target_column`, `feature_columns`, `primary_metric`, `additional_metrics`, `hyperparameters`, `random_seed`, `idempotency_key` | `ml:experiments:create` | Formulate, validate, and queue an ML experiment with transactional Outbox event. |
-| `get_experiment` | `experiment_id` | `ml:experiments:read` | Retrieve current lifecycle state (`QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`), run counts, and timestamps. |
+| `create_experiment` | `project_id`, `dataset_version_id`, `model_version_id`, `task_type`, `target_column`, `feature_columns`, `primary_metric`, `additional_metrics`, `hyperparameters`, `random_seed`, `idempotency_key` | `ml:experiments:create` | Formulate, validate (target/feature columns, model bounds), and queue an ML experiment with transactional Outbox event. |
+| `get_experiment` | `experiment_id` | `ml:experiments:read` | Retrieve current lifecycle state (`QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`), run counts, timestamps, and error details (`error_message`, `error_type`) if failed. |
 | `cancel_experiment` | `experiment_id` | `ml:experiments:cancel` | Gracefully cancel an active or queued experiment run. |
 | `list_experiments` | `project_id`, `status`, `limit`, `offset` | `ml:experiments:read` | Paginated listing of experiments within a project with optional status filter. |
 
